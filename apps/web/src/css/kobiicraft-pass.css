@@ -1,0 +1,63 @@
+/* ============================================================================
+   KobiiCraft Pass — proxy-injected branding over the Vaultwarden web-vault.
+   Served by nginx from /kp-branding/kobiicraft-pass.css, injected into <head>
+   via `sub_filter '</head>' ...`. See nginx-pass-branding.conf.
+
+   Design tokens:  navy #1F3A5F (primary) · gold #9C7B3C (accent) · cream #FAF7F2
+   Scope:          COSMETIC ONLY. Never touches vault data, crypto, or auth flow.
+   Update policy:  targets ONLY stable, content-based hooks — never hashed
+                   Bitwarden utility classes (which change every build,
+                   T-PASS-BRANDING-ANGULAR-HASHED-CLASSES-001). The login logo,
+                   center icon, version and footer are Angular-rendered and handled
+                   by kp-brand.js against stable hooks (aria-label / viewBox / vw- id)
+                   discovered from the real rendered DOM (T-PASS-BRANDING-CURL-NOT-ENOUGH-001).
+   ============================================================================ */
+
+:root {
+  --kp-navy:  #1F3A5F;
+  --kp-gold:  #9C7B3C;
+  --kp-cream: #FAF7F2;
+}
+
+/* ---- Logo swap ---------------------------------------------------------------
+   The loading + login logo is an <img class="new-logo-themed">. `content:url()`
+   replaces the rendered image in Chromium/WebKit/Firefox. Loaded after the
+   original stylesheet link, so equal-specificity !important wins the cascade. */
+img.new-logo-themed,
+.new-logo-themed {
+  content: url("/kp-branding/logo.svg") !important;
+  width: 210px !important;
+  max-width: 210px !important;
+  height: auto !important;
+  object-fit: contain !important;
+}
+
+/* ---- Hide the Bitwarden background illustrations -----------------------------
+   The two faint corner illustrations are inline SVGs with STABLE viewBoxes
+   (content-based, not hashed). kp-brand.js swaps the top-left logo and the center
+   "safe" icon to KobiiCraft assets; these are the remaining Bitwarden brand art. */
+svg[viewBox="0 0 501 226"],
+svg[viewBox="0 0 506 297"] {
+  display: none !important;
+}
+
+/* ---- KobiiCraft footer -------------------------------------------------------
+   kp-brand.js replaces div#vw-disclaimer textContent with the KobiiCraft footer
+   and tags it [data-kp-footer]. This just gives it brand styling. */
+[data-kp-footer] {
+  color: var(--kp-gold) !important;
+  font-weight: 600 !important;
+  letter-spacing: .3px !important;
+  opacity: .9 !important;
+}
+
+/* ---- Primary accent recolor: DEFERRED ("no romperlo") ------------------------
+   Attempted navy primary by overriding --color-primary-600/700 + --color-brand-600/700
+   on .theme_light. Verified via headless screenshot that this made the primary CTA
+   (the "Continue" button) INVISIBLE — its background and text both resolved through
+   the brand scale, so recoloring collapsed the contrast. Reverted: an invisible
+   CTA is a functional break, worse than Vaultwarden's default blue (which is a
+   generic accent, not Vaultwarden *identity*). A correct navy theme needs the exact
+   fg/bg token pair mapped for this build + dark-theme verification — deferred, not
+   guessed. The KobiiCraft identity (logo, center mark, footer, title, removed
+   Vaultwarden art) is complete without it. */
