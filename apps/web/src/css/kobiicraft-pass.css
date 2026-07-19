@@ -2,158 +2,234 @@
    KobiiCraft Pass - Inkling theme for the unauthenticated shell.
 
    Shipped INSIDE the fork (apps/web/src/css/kobiicraft-pass.css) and referenced
-   from index.html via the webpackIgnore <link> that upstream leaves dangling.
-   That link is Vaultwarden's own operator hook, which makes this the sanctioned
-   extension point - unlike nginx sub_filter, it survives upstream merges
-   because upstream has no file here to conflict with.
+   from index.html via the webpackIgnore <link> upstream leaves dangling. That
+   link is Vaultwarden's own operator hook, so this survives upstream merges:
+   upstream has no file here to conflict with.
 
-   SCOPE: cosmetic only. Never touches vault data, crypto, session or auth flow.
+   SCOPE: cosmetic only. Never vault data, crypto, session or auth flow.
 
-   SCOPED TO .layout_frontend ON PURPOSE. The dark Inkling treatment applies to
-   the login / unauthenticated shell only. The authenticated vault keeps whatever
-   theme the user chose - forcing dark there would override a real user setting
-   and fight the in-app theme switcher.
+   SCOPED TO .layout_frontend. The dark treatment covers the login shell only;
+   the authenticated vault keeps the theme the user chose rather than having
+   dark forced over a real user setting.
 
-   SELECTOR POLICY: attribute and content-based hooks only (bitbutton, bitlink,
-   viewBox, layout class). Never hashed Tailwind utility classes - those change
-   on every upstream build (T-PASS-BRANDING-ANGULAR-HASHED-CLASSES-001).
+   SELECTOR POLICY: attribute / content hooks only, taken from the REAL rendered
+   DOM (render service dump), never hashed Tailwind classes and never guessed.
+
+   CONTRAST LAW (learned the hard way, twice):
+   never set a foreground colour without setting its background in the same
+   rule. v1 of this file set `span { color: cream }` globally, which turned the
+   light secondary buttons into cream-on-white and made them unreadable - the
+   same failure class as an earlier navy-CTA attempt that made the primary
+   button invisible. Colour is always declared in fg/bg PAIRS below.
    ============================================================================ */
 
 :root {
-  --kp-navy:    #1F3A5F;
-  --kp-gold:    #9C7B3C;
-  --kp-cream:   #FAF7F2;
-  --kp-abyss:   #0A0A0F;
-  --kp-deep:    #111827;
-  --kp-surface: rgba(255, 255, 255, 0.04);
-  --kp-edge:    rgba(255, 255, 255, 0.08);
-  --kp-display: Georgia, 'Playfair Display', 'Times New Roman', serif;
+  --kp-navy:      #1F3A5F;
+  --kp-navy-lift: #2A4E7E;
+  --kp-gold:      #9C7B3C;
+  --kp-cream:     #FAF7F2;
+  --kp-abyss:     #0A0A0F;
+  --kp-deep:      #111827;
+  --kp-surface:   #161A23;
+  --kp-edge:      rgba(250, 247, 242, 0.10);
+  --kp-display:   Georgia, 'Playfair Display', 'Times New Roman', serif;
 }
 
-/* ---- 1. Atmospheric ground -------------------------------------------------
-   Depth comes from background contrast, not from heavy shadow. */
+/* ---- 1. Atmospheric ground ------------------------------------------------- */
 body.layout_frontend {
   background: linear-gradient(160deg, var(--kp-abyss) 0%, var(--kp-deep) 100%) !important;
   background-attachment: fixed !important;
   color: var(--kp-cream) !important;
 }
 
-/* ---- 2. Logo ---------------------------------------------------------------
-   The shell renders <img class="new-logo-themed"> with NO src: upstream expects
-   css/vaultwarden.css to supply it via content:url(), and that file does not
-   exist in the shipped image at all - so upstream ships a broken image here.
-   Pointing it at our own asset fixes that as a side effect of branding. */
-body.layout_frontend img.new-logo-themed,
-body.layout_frontend .new-logo-themed {
-  content: url("/images/logo.svg") !important;
-  width: 210px !important;
-  max-width: 210px !important;
-  height: auto !important;
-  object-fit: contain !important;
+/* ---- 1b. Let the gradient actually show ------------------------------------
+   index.html ships <html class="theme_light">, and that theme paints OPAQUE
+   light backgrounds on the page containers, which sit on top of the body
+   gradient and hide it entirely. Making those containers transparent is the
+   fix; the alternative - painting each one dark - means chasing every new
+   container upstream ever adds. The form is excluded: it owns a real surface. */
+body.layout_frontend main:not(form),
+body.layout_frontend .tw-bg-background:not(form),
+body.layout_frontend .tw-bg-background-alt:not(form),
+body.layout_frontend app-root > *:not(form),
+body.layout_frontend .tw-min-h-screen:not(form) {
+  background-color: transparent !important;
+  background-image: none !important;
 }
 
-/* ---- 3. Remove the Bitwarden corner illustrations --------------------------
-   Inline SVGs identified by STABLE content-based viewBox values, not by class. */
+/* ---- 2. Brand marks --------------------------------------------------------
+   The nav mark is an INLINE <svg viewBox="0 0 290 60"> inside
+   <bit-svg aria-label="KobiiCraft Pass logo">, not the images/logo.svg file -
+   which is why replacing that file alone changed nothing on screen. Hide the
+   inline art and paint our asset on the wrapper instead. */
+body.layout_frontend bit-svg[aria-label="KobiiCraft Pass logo"] > svg,
+body.layout_frontend svg[viewBox="0 0 290 60"] {
+  display: none !important;
+}
+
+body.layout_frontend bit-svg[aria-label="KobiiCraft Pass logo"] {
+  display: inline-block !important;
+  width: 200px !important;
+  height: 42px !important;
+  background-image: url("/images/logo.svg") !important;
+  background-repeat: no-repeat !important;
+  background-position: left center !important;
+  background-size: contain !important;
+}
+
+/* Centre "safe" mark above the heading: keep the slot, swap the art. */
+body.layout_frontend svg[viewBox="0 8.33 80 66.67"] > * {
+  display: none !important;
+}
+body.layout_frontend svg[viewBox="0 8.33 80 66.67"] {
+  background-image: url("/images/icon-white.svg") !important;
+  background-repeat: no-repeat !important;
+  background-position: center !important;
+  background-size: contain !important;
+  opacity: .92 !important;
+}
+
+/* Bitwarden corner illustrations - stable content-based viewBoxes. */
 body.layout_frontend svg[viewBox="0 0 501 226"],
 body.layout_frontend svg[viewBox="0 0 506 297"] {
   display: none !important;
 }
 
-/* ---- 4. Editorial heading --------------------------------------------------
-   One display face, on the primary heading only. Restraint is the point. */
+/* ---- 3. Editorial heading -------------------------------------------------- */
 body.layout_frontend h1,
-body.layout_frontend h1[bittypography],
-body.layout_frontend [bittypography="h1"] {
+body.layout_frontend h2 {
   font-family: var(--kp-display) !important;
   font-weight: 600 !important;
   letter-spacing: -0.02em !important;
   color: var(--kp-cream) !important;
 }
 
-/* ---- 5. Form surface -------------------------------------------------------
-   Translucent card over the gradient. Depth via contrast, no aggressive shadow. */
-body.layout_frontend main,
-body.layout_frontend form,
-body.layout_frontend bit-card,
-body.layout_frontend .tw-bg-background-alt,
-body.layout_frontend .tw-bg-background {
+/* ---- 4. Form surface -------------------------------------------------------
+   Applied to the form container only. v1 also hit .tw-bg-background and
+   bit-card, which cascaded onto nested controls and produced the input /
+   checkbox overlap artefact. Narrowed deliberately. */
+body.layout_frontend form {
   background-color: var(--kp-surface) !important;
   border: 1px solid var(--kp-edge) !important;
   border-radius: 12px !important;
   box-shadow: none !important;
 }
 
-body.layout_frontend label,
-body.layout_frontend p,
-body.layout_frontend span {
+/* Text that sits directly on the dark surface. Buttons are excluded - they
+   own their own fg/bg pair below. */
+body.layout_frontend form > label,
+body.layout_frontend form label,
+body.layout_frontend bit-label,
+body.layout_frontend bit-form-field label {
   color: var(--kp-cream) !important;
 }
 
-/* ---- 6. Primary CTA --------------------------------------------------------
-   BOTH background AND foreground are set explicitly, and this is the whole
-   point of this rule. A previous attempt recoloured only the brand scale
-   (--color-primary-600/700), and a headless screenshot showed the Continue
-   button had gone INVISIBLE: its text colour derived from that same scale, so
-   moving the scale collapsed foreground and background together. Setting the
-   pair explicitly is what makes navy safe here. Verify by screenshot, never by
-   reading the stylesheet - a declared value is a hypothesis until rendered. */
-body.layout_frontend button[bitbutton][buttontype="primary"],
-body.layout_frontend button[bitbutton][buttontype="primary"]:not(:disabled),
-body.layout_frontend a[bitbutton][buttontype="primary"] {
+/* ---- 5. Inputs: explicit pair ---------------------------------------------- */
+body.layout_frontend input:not([type="checkbox"]):not([type="radio"]),
+body.layout_frontend select,
+body.layout_frontend textarea {
+  background-color: rgba(0, 0, 0, 0.30) !important;
+  color: var(--kp-cream) !important;
+  border: 1px solid var(--kp-edge) !important;
+  border-radius: 8px !important;
+}
+
+body.layout_frontend input:not([type="checkbox"]):not([type="radio"]):focus,
+body.layout_frontend select:focus,
+body.layout_frontend textarea:focus {
+  border-color: var(--kp-gold) !important;
+  outline: 1px solid var(--kp-gold) !important;
+}
+
+/* Chromium paints autofilled inputs with its own opaque background and text
+   colour, which beat a plain background-color declaration - that is why the
+   email field rendered light grey on a dark form. The inset box-shadow trick
+   is the only reliable way to repaint it, and -webkit-text-fill-color is what
+   actually controls autofilled text. Both halves of the pair, again. */
+body.layout_frontend input:-webkit-autofill,
+body.layout_frontend input:-webkit-autofill:hover,
+body.layout_frontend input:-webkit-autofill:focus,
+body.layout_frontend input:-internal-autofill-selected {
+  -webkit-text-fill-color: var(--kp-cream) !important;
+  -webkit-box-shadow: 0 0 0 1000px #12161F inset !important;
+  box-shadow: 0 0 0 1000px #12161F inset !important;
+  caret-color: var(--kp-cream) !important;
+}
+
+/* bit-form-field wraps the control; without this the wrapper keeps the light
+   theme fill and shows through around the input. */
+body.layout_frontend bit-form-field,
+body.layout_frontend bit-form-field > div {
+  background-color: transparent !important;
+}
+
+/* Muted helper text ("or" divider, hints) is dark-on-dark by default here. */
+body.layout_frontend .tw-text-muted,
+body.layout_frontend .tw-text-secondary,
+body.layout_frontend bit-hint {
+  color: rgba(250, 247, 242, .60) !important;
+}
+
+/* ---- 6. PRIMARY button: fg AND bg, plus hover and disabled -----------------
+   Verified rendering navy-on-cream and legible in staging. */
+body.layout_frontend button[buttontype="primary"],
+body.layout_frontend a[buttontype="primary"] {
   background-color: var(--kp-navy) !important;
   border-color: var(--kp-navy) !important;
   color: var(--kp-cream) !important;
 }
-
-body.layout_frontend button[bitbutton][buttontype="primary"] span,
-body.layout_frontend a[bitbutton][buttontype="primary"] span {
+body.layout_frontend button[buttontype="primary"] *,
+body.layout_frontend a[buttontype="primary"] * {
   color: var(--kp-cream) !important;
 }
-
-body.layout_frontend button[bitbutton][buttontype="primary"]:hover:not(:disabled) {
-  background-color: #2A4E7E !important;
-  border-color: #2A4E7E !important;
+body.layout_frontend button[buttontype="primary"]:hover:not(:disabled) {
+  background-color: var(--kp-navy-lift) !important;
+  border-color: var(--kp-navy-lift) !important;
+}
+body.layout_frontend button[buttontype="primary"]:disabled {
+  background-color: rgba(31, 58, 95, .40) !important;
+  border-color: rgba(31, 58, 95, .40) !important;
+  color: rgba(250, 247, 242, .50) !important;
 }
 
-/* Disabled state must stay visibly distinct from enabled, or the form lies. */
-body.layout_frontend button[bitbutton][buttontype="primary"]:disabled {
-  background-color: rgba(31, 58, 95, 0.45) !important;
-  border-color: rgba(31, 58, 95, 0.45) !important;
-  color: rgba(250, 247, 242, 0.55) !important;
+/* ---- 7. SECONDARY buttons: ghost, explicit pair ----------------------------
+   These render as light pills by default. On a dark ground that is both ugly
+   and, once any cream text lands on them, unreadable. Give them a real dark
+   background so the cream text they contain is guaranteed legible. */
+body.layout_frontend button:not([buttontype="primary"]),
+body.layout_frontend a[bitbutton]:not([buttontype="primary"]) {
+  background-color: transparent !important;
+  border: 1px solid var(--kp-edge) !important;
+  color: var(--kp-cream) !important;
+  border-radius: 8px !important;
+}
+body.layout_frontend button:not([buttontype="primary"]) *,
+body.layout_frontend a[bitbutton]:not([buttontype="primary"]) * {
+  color: var(--kp-cream) !important;
+}
+body.layout_frontend button:not([buttontype="primary"]):hover:not(:disabled) {
+  background-color: rgba(250, 247, 242, .08) !important;
+  border-color: var(--kp-gold) !important;
 }
 
-/* ---- 7. Links: gold is the single accent ----------------------------------- */
-body.layout_frontend a[bitlink],
-body.layout_frontend a:not([bitbutton]) {
+/* ---- 8. Links: gold is the single accent ----------------------------------- */
+body.layout_frontend a:not([bitbutton]):not([buttontype]) {
   color: var(--kp-cream) !important;
   text-underline-offset: 3px !important;
 }
-
-body.layout_frontend a[bitlink]:hover,
-body.layout_frontend a:not([bitbutton]):hover {
+body.layout_frontend a:not([bitbutton]):not([buttontype]):hover {
   color: var(--kp-gold) !important;
 }
 
-/* ---- 8. Inputs ------------------------------------------------------------- */
-body.layout_frontend input,
-body.layout_frontend select,
-body.layout_frontend textarea {
-  background-color: rgba(0, 0, 0, 0.25) !important;
-  border-color: var(--kp-edge) !important;
-  color: var(--kp-cream) !important;
-}
-
-body.layout_frontend input:focus,
-body.layout_frontend select:focus,
-body.layout_frontend textarea:focus {
-  border-color: var(--kp-gold) !important;
-  outline-color: var(--kp-gold) !important;
-}
-
-/* ---- 9. Footer attribution -------------------------------------------------
-   AGPL attribution stays legible. Discreet is fine; hidden is not. */
-body.layout_frontend footer,
-body.layout_frontend [data-kp-footer] {
-  color: rgba(250, 247, 242, 0.55) !important;
-  letter-spacing: .3px !important;
+/* ---- 9. Legal footer -------------------------------------------------------
+   The Vaultwarden / Bitwarden(R) trademark disclaimer stays. It is a legal
+   notice disclaiming association with Bitwarden Inc., not decoration, and
+   removing it would be both an AGPL-attribution and a trademark problem.
+   Made discreet, never hidden - legibility is the requirement. */
+body.layout_frontend #vw-disclaimer,
+body.layout_frontend footer {
+  color: rgba(250, 247, 242, .48) !important;
+  font-size: 12px !important;
+  line-height: 1.5 !important;
+  letter-spacing: .2px !important;
 }
