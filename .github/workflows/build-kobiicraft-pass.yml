@@ -1,0 +1,129 @@
+name: Build KobiiCraft Pass web vault
+
+# Builds the branded web vault and publishes it as a downloadable artifact.
+#
+# This deliberately does NOT depend on dani-garcia/bw_web_builds. That harness
+# hardcodes the vaultwarden remote in scripts/checkout_web_vault.sh, so using it
+# would force us to fork the harness purely to change one URL. The build it runs
+# is three commands (npm ci, npm run dist:oss:selfhost, tar), so we run them
+# directly against our own checkout and keep the harness unforked.
+#
+# It runs on GitHub Actions rather than the VPS on purpose: the VPS sits at 98%
+# disk with ~3G free and swap already heavily consumed, and this checkout alone
+# is ~1.14G before npm ci.
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Branch or tag to build
+        required: true
+        default: kobiicraft/prod
+  push:
+    branches: [kobiicraft/prod]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.ref || 'kobiicraft/prod' }}
+          fetch-depth: 1
+
+      - name: Use Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Guard - branding branch must not touch auth or crypto
+        run: |
+          set -euo pipefail
+          BASE=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          if [ -n "$BASE" ]; then
+            CHANGED=$(git diff --name-only "$BASE"...HEAD || true)
+            echo "Changed vs $BASE:"; echo "$CHANGED"
+            # Branding may touch the HTML shell, manifest, images, css and the
+            # locale strings. locales/ is user-visible product copy, not logic -
+            # it is in scope precisely so the rebrand does not have to reach into
+            # component TypeScript to change a label.
+            OFFENDERS=$(echo "$CHANGED" | grep -vE '^apps/web/src/(index\.html|manifest\.json|browserconfig\.xml|favicon\.ico|images/|css/|locales/)' | grep -v '^\.github/' || true)
+            if [ -n "$OFFENDERS" ]; then
+              echo "REFUSING: branding branch touches non-branding paths:"; echo "$OFFENDERS"; exit 1
+            fi
+          fi
+          echo "Branding scope guard passed."
+
+      - name: Guard - real Bitwarden client references must survive the rebrand
+        run: |
+          set -euo pipefail
+          M=apps/web/src/locales/en/messages.json
+          fail=0
+          # These name REAL client software the user has to install. Renaming them
+          # would send users after a product that does not exist and would break
+          # 2FA and login-with-device setup. A rebrand that erases them is a bug.
+          for ref in "Bitwarden app" "Bitwarden Authenticator" "Bitwarden Directory Connector" "bitwarden.com"; do
+            if ! grep -q "$ref" "$M"; then echo "FAIL: '$ref' was removed from locales"; fail=1; fi
+          done
+          [ $fail -eq 0 ] && echo "Client-reference guard passed."
+          exit $fail
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build self-hosted web vault
+        working-directory: apps/web
+        run: npm run dist:oss:selfhost
+
+      - name: Copy the branding stylesheet into the build output
+        working-directory: apps/web
+        run: |
+          set -euo pipefail
+          # The Angular build does NOT copy apps/web/src/css into build/css -
+          # verified empirically in run 29687310859. index.html references the
+          # stylesheet with webpackIgnore, so without this step the link 404s.
+          mkdir -p build/css
+          cp src/css/kobiicraft-pass.css build/css/kobiicraft-pass.css
+          echo "copied: $(ls -la build/css/kobiicraft-pass.css)"
+
+      - name: Stamp version
+        working-directory: apps/web
+        run: printf '{"version":"%s"}' "${{ github.ref_name }}-$(git rev-parse --short HEAD)" | tee build/vw-version.json
+
+      - name: Verify branding landed in the BUILD OUTPUT, not just in source
+        working-directory: apps/web/build
+        run: |
+          set -euo pipefail
+          fail=0
+          grep -q 'KobiiCraft Pass' index.html || { echo "FAIL: title not branded in build output"; fail=1; }
+          grep -q '#1F3A5F' index.html         || { echo "FAIL: theme-color not branded"; fail=1; }
+          if grep -q 'Vaultwarden Web' index.html; then echo "FAIL: 'Vaultwarden Web' still present"; fail=1; fi
+          [ -f css/kobiicraft-pass.css ] || { echo "FAIL: branding stylesheet missing from build output"; fail=1; }
+          grep -q 'layout_frontend' css/kobiicraft-pass.css || { echo "FAIL: stylesheet present but not the Inkling theme"; fail=1; }
+          for f in images/logo.svg images/icon-white.svg; do
+            [ -f "$f" ] || { echo "FAIL: $f missing"; fail=1; }
+          done
+          echo "--- build output branding ---"
+          ls -la css/kobiicraft-pass.css images/logo.svg images/icon-white.svg || true
+          exit $fail
+
+      - name: Package
+        run: |
+          set -euo pipefail
+          mv apps/web/build ./web-vault
+          tar -czf kobiicraft_pass_web_vault.tar.gz web-vault --owner=0 --group=0
+          sha256sum kobiicraft_pass_web_vault.tar.gz | tee sha256sums.txt
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: kobiicraft-pass-web-vault
+          path: |
+            kobiicraft_pass_web_vault.tar.gz
+            sha256sums.txt
+          retention-days: 30

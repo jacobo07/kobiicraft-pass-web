@@ -21,7 +21,7 @@
     "message": "All critical apps"
   },
   "appLogoLabel": {
-    "message": "Bitwarden logo"
+    "message": "KobiiCraft Pass logo"
   },
   "criticalApplications": {
     "message": "Critical applications"
@@ -1845,7 +1845,7 @@
     "message": "Create account"
   },
   "newToBitwarden": {
-    "message": "New to Bitwarden?"
+    "message": "New to KobiiCraft Pass?"
   },
   "setAStrongPassword": {
     "message": "Set a strong password"
@@ -1863,7 +1863,7 @@
     "message": "Log in"
   },
   "loginPageEmailEntryScreenTitle": {
-    "message": "Log in to Bitwarden"
+    "message": "Log in to KobiiCraft Pass"
   },
   "enterTheCodeSentToYourEmail": {
     "message": "Enter the code sent to your email"
@@ -2605,10 +2605,10 @@
     "message": "Turn on new device login protection"
   },
   "turnOffNewDeviceLoginProtectionModalDesc": {
-    "message": "Proceed below to turn off the verification emails bitwarden sends when you login from a new device."
+    "message": "Proceed below to turn off the verification emails KobiiCraft Pass sends when you login from a new device."
   },
   "turnOnNewDeviceLoginProtectionModalDesc": {
-    "message": "Proceed below to have bitwarden send you verification emails when you login from a new device."
+    "message": "Proceed below to have KobiiCraft Pass send you verification emails when you login from a new device."
   },
   "turnOffNewDeviceLoginProtectionWarning": {
     "message": "With new device login protection turned off, anyone with your master password can access your account from any device. To protect your account without verification emails, set up two-step login."
@@ -2873,7 +2873,7 @@
     "message": "If you have setup SSO or plan to, Two-step Login may already be enforced through your Identity Provider."
   },
   "twoStepLoginRecoveryWarning": {
-    "message": "Setting up two-step login can permanently lock you out of your Bitwarden account. A recovery code allows you to access your account in the event that you can no longer use your normal two-step login provider (example: you lose your device). Bitwarden support will not be able to assist you if you lose access to your account. We recommend you write down or print the recovery code and keep it in a safe place."
+    "message": "Setting up two-step login can permanently lock you out of your KobiiCraft Pass account. A recovery code allows you to access your account in the event that you can no longer use your normal two-step login provider (example: you lose your device). KobiiCraft Pass support will not be able to assist you if you lose access to your account. We recommend you write down or print the recovery code and keep it in a safe place."
   },
   "restrictedItemTypePolicy": {
     "message": "Remove card item type"
@@ -2986,7 +2986,7 @@
     }
   },
   "continueToExternalUrlDesc": {
-    "message": "You are leaving Bitwarden and launching an external website in a new window."
+    "message": "You are leaving KobiiCraft Pass and launching an external website in a new window."
   },
   "twoStepContinueToBitwardenUrlTitle": {
     "message": "Continue to bitwarden.com?"
@@ -10979,7 +10979,7 @@
     "message": "Get started with your vault"
   },
   "onboardingChecklistSubtitle": {
-    "message": "Complete these steps to secure your personal data and get the most out of Bitwarden"
+    "message": "Complete these steps to secure your personal data and get the most out of KobiiCraft Pass"
   },
   "dismissThisChecklist": {
     "message": "Dismiss this checklist"
@@ -13540,7 +13540,7 @@
     "message": "There was an error calculating tax for your location. Please try again."
   },
   "individualUpgradeWelcomeMessage": {
-    "message": "Welcome to Bitwarden"
+    "message": "Welcome to KobiiCraft Pass"
   },
   "individualUpgradeDescriptionMessage": {
     "message": "Unlock more security features with Premium, or start sharing items with Families"
@@ -14013,10 +14013,10 @@
     "message": "Invalid Send password"
   },
   "vaultWelcomeDialogTitle": {
-    "message": "You're in! Welcome to Bitwarden"
+    "message": "You're in! Welcome to KobiiCraft Pass"
   },
   "vaultWelcomeDialogDescription": {
-    "message": "Store all your passwords and personal info in your Bitwarden vault. We'll show you around."
+    "message": "Store all your passwords and personal info in your KobiiCraft Pass vault. We'll show you around."
   },
   "vaultWelcomeDialogPrimaryCta": {
     "message": "Start tour"
