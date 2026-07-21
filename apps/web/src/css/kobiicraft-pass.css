@@ -301,3 +301,41 @@ body:not(.layout_frontend) bit-nav-logo a {
   background-position: left center !important;
   background-size: contain !important;
 }
+
+/* ============================================================================
+   11. DASH ECOSYSTEM ALIGNMENT - neutral near-black atmosphere
+   ----------------------------------------------------------------------------
+   Coherence with dash.kobicraft.net (HR-KOBIICRAFT-ECOSYSTEM-COHERENCE-001).
+   Bitwarden's Dark theme is a BLUE-GRAY (--color-background: 32 39 51). The dash
+   (kobicraft-panel DESIGN.md calco :root) is NEUTRAL near-black (--bg #0a0a0a).
+   This block re-points the dark-theme background + text ramp to the dash's neutral
+   values so a user who uses both products reads ONE ecosystem. Every value is read
+   verbatim from each project's source of truth, never guessed
+   (vault/docs/KOBIICRAFT_PASS_DASH_TOKEN_MAP_2026-07-21.md in KobiiCraft Core Files).
+
+   Accent stays navy/gold (section 10) - that is Pass's product identity ON the
+   shared near-black shell, NOT the dash's white/blue tint (same ecosystem, distinct
+   product). Vault rows stay FLAT: the dash keeps tables / nav / list rows flat with
+   hard borders and reserves glass for elevated cards + modals only (DESIGN.md 9.8),
+   so glass-on-rows is a deliberate non-goal, not an omission.
+
+   Theme class is on <html> (index.html ships theme_light; dark -> html.theme_dark).
+   Scoped to html.theme_dark + the authenticated interior body:not(.layout_frontend):
+   the light-theme interior and the login shell are deliberately untouched. Custom
+   properties inherit, so setting them on <body> re-points every descendant that
+   reads rgb(var(--color-background)).
+
+   FAIL-CLOSED before any prod cutover (HR-67): overriding background tokens on a
+   live credential vault must be proven on a REAL logged-in render (both a cipher
+   list and an open item + a dialog), watching for any --color-text-contrast
+   (18 26 39, dark) landing on a now-darker --color-background-alt (15 15 15).
+   ============================================================================ */
+html.theme_dark body:not(.layout_frontend) {
+  --color-background:      10 10 10;   /* dash --bg        (was 32 39 51) */
+  --color-background-alt:  15 15 15;   /* dash --bg-elev   (was 18 26 39) sidebar / flat-elev */
+  --color-background-alt2: 26 26 26;   /* dash --bg-hover  (was 47 52 61) */
+  --color-background-alt3: 29 29 29;   /* dash --bg-active (was 48 57 70) */
+  --color-background-alt4: 15 15 15;   /* dash --bg-elev   (was 18 26 39) */
+  --color-text-main:  237 237 237;     /* dash --text      (was 243 246 249 - drop blue cast) */
+  --color-text-muted: 138 138 138;     /* dash --text-mut  (was 136 152 181 - drop blue cast) */
+}
