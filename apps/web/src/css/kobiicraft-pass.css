@@ -233,3 +233,71 @@ body.layout_frontend footer {
   line-height: 1.5 !important;
   letter-spacing: .2px !important;
 }
+
+
+/* ============================================================================
+   10. AUTHENTICATED VAULT INTERIOR
+   ----------------------------------------------------------------------------
+   The interior (post-unlock vault) has NO `layout_frontend` body class, so the
+   login-shell rules above never reach it. Scoped to body:not(.layout_frontend)
+   so the two surfaces stay independent.
+
+   Verified against a REAL logged-in session on a staging container (server
+   1.36.0 + this web vault), rendered in both native themes. The near-black
+   "Inkling" atmosphere comes from Bitwarden's own Dark theme; this layer adds
+   the KobiiCraft brand on top of it, so it works whichever theme the user picks.
+
+   Strategy: swap the accent HUE (Bitwarden blue -> KobiiCraft navy) at the
+   token level - the whole app derives its accent from --color-brand-* and
+   --color-primary-*. Primary buttons additionally get an explicit fg/bg pair
+   (HR-67) because the "+ New" button reads its blue from a utility class whose
+   token scope the palette override alone did not reach; the !important pair
+   wins regardless.
+   ============================================================================ */
+body:not(.layout_frontend) {
+  --color-brand-050: 233 238 245;  --color-primary-050: 233 238 245;
+  --color-brand-100: 210 221 235;  --color-primary-100: 210 221 235;
+  --color-brand-200: 168 187 213;  --color-primary-200: 168 187 213;
+  --color-brand-300: 116 146 186;  --color-primary-300: 116 146 186;
+  --color-brand-400:  74 110 158;  --color-primary-400:  74 110 158;
+  --color-brand-500:  47  78 126;  --color-primary-500:  47  78 126;
+  --color-brand-600:  31  58  95;  --color-primary-600:  31  58  95;
+  --color-brand-700:  31  58  95;  --color-primary-700:  24  45  74;
+  --color-brand-800:  24  45  74;  --color-primary-800:  18  34  56;
+  --color-brand-900:  18  34  56;  --color-primary-900:  14  26  43;
+  --color-brand-950:  12  22  37;  --color-primary-950:  10  16  27;
+}
+
+/* Primary buttons ("+ New", "New item", dialog CTAs): explicit navy pair. */
+body:not(.layout_frontend) button[buttontype="primary"],
+body:not(.layout_frontend) a[buttontype="primary"] {
+  background-color: var(--kp-navy) !important;
+  border-color: var(--kp-navy) !important;
+  color: var(--kp-cream) !important;
+}
+body:not(.layout_frontend) button[buttontype="primary"] *,
+body:not(.layout_frontend) a[buttontype="primary"] * {
+  color: var(--kp-cream) !important;
+}
+body:not(.layout_frontend) button[buttontype="primary"]:hover:not(:disabled),
+body:not(.layout_frontend) a[buttontype="primary"]:hover:not(:disabled) {
+  background-color: var(--kp-navy-lift) !important;
+  border-color: var(--kp-navy-lift) !important;
+}
+
+/* Sidebar wordmark: the interior mark is an inline <svg viewBox="0 0 800 200">
+   inside <bit-nav-logo> (a DIFFERENT viewBox than the login's 290x60, and NOT
+   the logo-white.svg file, which the bundle never references). Hide it, paint
+   our asset - the sidebar is dark in both themes so the light logo reads. */
+body:not(.layout_frontend) bit-nav-logo svg[viewBox="0 0 800 200"] {
+  display: none !important;
+}
+body:not(.layout_frontend) bit-nav-logo a {
+  display: block !important;
+  height: 34px !important;
+  margin: 2px 4px !important;
+  background-image: url("/images/logo.svg") !important;
+  background-repeat: no-repeat !important;
+  background-position: left center !important;
+  background-size: contain !important;
+}
