@@ -1,14 +1,22 @@
 <svg version="1.1" viewBox="0 0 290 60" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="KobiiCraft Pass">
   <title>KobiiCraft Pass</title>
-  <!-- KobiiCraft Pass wordmark lockup.
+  <!-- KobiiCraft Pass wordmark lockup - MONOCHROME build.
        viewBox matches the upstream logo.svg (0 0 290 60) exactly so any CSS
        sizing that targeted the original keeps behaving identically.
-       Navy #1F3A5F badge, gold #9C7B3C wordmark. Gold is deliberate: cream is
-       invisible on the light default theme and navy is invisible on dark, so a
-       single gold wordmark is the only one-asset choice that clears contrast on
-       BOTH Vaultwarden themes. Hierarchy comes from size and weight. -->
-  <rect x="2" y="6" width="48" height="48" rx="12" fill="#1F3A5F" stroke="#9C7B3C" stroke-width="2"/>
-  <text x="26" y="39" text-anchor="middle" font-family="'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="23" font-weight="700" fill="#FAF7F2">K<tspan fill="#9C7B3C">P</tspan></text>
-  <text x="64" y="29" font-family="'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="22" font-weight="700" fill="#9C7B3C" letter-spacing="0.2">KobiiCraft</text>
-  <text x="65" y="50" font-family="'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="13.5" font-weight="600" fill="#7A5E2E" letter-spacing="3.8">PASS</text>
+
+       SINGLE HUE ON PURPOSE. The predecessor used a navy badge + gold wordmark,
+       which the minimalist theme cannot carry: the light theme applies
+       filter:invert(1) to make one asset serve both grounds, and inverting gold
+       #9C7B3C yields #6384C3 - a BLUE. That silently reintroduced the exact
+       accent the design forbids, measured on a real light-theme render.
+       Every mark here is pure #FFFFFF, so invert() can only ever produce pure
+       #000000. Hierarchy comes from size, weight and opacity - never hue.
+
+       The badge is an OUTLINE rather than a fill so it reads identically on
+       #0C0C0C and (inverted) on #FFFFFF, and matches the outlined KP monogram
+       already used as the centre mark. -->
+  <rect x="3" y="7" width="46" height="46" rx="11" fill="none" stroke="#FFFFFF" stroke-width="2.5"/>
+  <text x="26" y="39" text-anchor="middle" font-family="'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="21" font-weight="700" fill="#FFFFFF">KP</text>
+  <text x="64" y="29" font-family="'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="22" font-weight="600" fill="#FFFFFF" letter-spacing="-0.3">KobiiCraft</text>
+  <text x="65" y="50" font-family="'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="13.5" font-weight="500" fill="#FFFFFF" fill-opacity="0.55" letter-spacing="3.8">PASS</text>
 </svg>

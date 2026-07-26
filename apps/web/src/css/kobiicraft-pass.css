@@ -1,63 +1,189 @@
 /* ============================================================================
-   KobiiCraft Pass - Inkling theme for the unauthenticated shell.
+   KobiiCraft Pass - minimalist dual-theme skin for the Vaultwarden web vault.
 
    Shipped INSIDE the fork (apps/web/src/css/kobiicraft-pass.css) and referenced
    from index.html via the webpackIgnore <link> upstream leaves dangling. That
    link is Vaultwarden's own operator hook, so this survives upstream merges:
-   upstream has no file here to conflict with.
+   upstream has no file here to conflict with. The file is COPIED verbatim into
+   the build (never compiled), so a CSS change needs no Angular rebuild.
 
    SCOPE: cosmetic only. Never vault data, crypto, session or auth flow.
 
-   SCOPED TO .layout_frontend. The dark treatment covers the login shell only;
-   the authenticated vault keeps the theme the user chose rather than having
-   dark forced over a real user setting.
+   ---------------------------------------------------------------------------
+   THEME MODEL - native, single source of truth
+   ---------------------------------------------------------------------------
+   Vaultwarden already owns a complete theme state machine. theme_head.js runs
+   BEFORE paint and reads localStorage['global_theming_selection']
+   ('"light"' | '"dark"' | '"system"'; unset or "system" -> prefers-color-scheme),
+   then stamps <html class="theme_light"> or <html class="theme_dark">.
 
-   SELECTOR POLICY: attribute / content hooks only, taken from the REAL rendered
-   DOM (render service dump), never hashed Tailwind classes and never guessed.
+   This file therefore introduces NO key, NO data-attribute and NO persistence
+   logic - it only supplies token sets keyed off those two native classes.
+   js/kp-theme.js renders the sun/moon control and writes that SAME key, so the
+   control and Settings -> Appearance -> Theme can never disagree.
 
-   CONTRAST LAW (learned the hard way, twice):
-   never set a foreground colour without setting its background in the same
-   rule. v1 of this file set `span { color: cream }` globally, which turned the
-   light secondary buttons into cream-on-white and made them unreadable - the
-   same failure class as an earlier navy-CTA attempt that made the primary
-   button invisible. Colour is always declared in fg/bg PAIRS below.
+   Earlier revisions FORCED a dark login shell over theme_light by painting
+   containers transparent. That override is gone: re-pointing the background
+   tokens themselves serves both themes and stops chasing every container
+   upstream adds.
+
+   ---------------------------------------------------------------------------
+   SELECTOR POLICY
+   ---------------------------------------------------------------------------
+   Attribute / content hooks only, taken from the REAL rendered DOM (render
+   service dump). Never hashed Tailwind classes, never guessed.
+
+   ---------------------------------------------------------------------------
+   CONTRAST LAW (learned the hard way, twice - do not re-earn)
+   ---------------------------------------------------------------------------
+   Never set a foreground colour without setting its background in the SAME rule.
+     - a navy --color-primary-* override once made the primary CTA INVISIBLE;
+     - a global `span { color: cream }` once made light secondary buttons
+       UNREADABLE (cream on white).
+   Monochrome raises the stakes: with brand hue removed there is no accidental
+   colour left to rescue a broken pair. Every rule below declares fg AND bg.
+
+   Token derivation + deviations:
+   vault/docs/KOBIICRAFT_PASS_MINIMALIST_TOKEN_MAP_2026-07-26.md
    ============================================================================ */
 
-:root {
-  --kp-navy:      #1F3A5F;
-  --kp-navy-lift: #2A4E7E;
-  --kp-gold:      #9C7B3C;
-  --kp-cream:     #FAF7F2;
-  --kp-abyss:     #0A0A0F;
-  --kp-deep:      #111827;
-  --kp-surface:   #161A23;
-  --kp-edge:      rgba(250, 247, 242, 0.10);
-  --kp-display:   Georgia, 'Playfair Display', 'Times New Roman', serif;
+/* ---- 1. KP token sets, keyed off the NATIVE theme class ---------------------
+   Values read verbatim from the Owner's reference HTML (Downloads/
+   kobicraft-dashboard.html and -dark.html), not paraphrased.
+   Vaultwarden's own --color-* properties are space-separated RGB triplets
+   (Tailwind convention), consumed as rgb(var(--color-x)) - so each override
+   below is the triplet form of the hex in the comment. */
+
+html.theme_dark {
+  --kp-bg:         #0C0C0C;
+  --kp-bg-side:    #101010;
+  --kp-bg-hover:   #161616;
+  --kp-border:     #1E1E1E;
+  --kp-border-mid: #262626;
+  --kp-t1:         #EBEBEB;
+  --kp-t2:         #8A8A8A;
+  --kp-t3:         #444444;
+
+  /* Primary CTA: reference --btn-from / --btn-bdr. */
+  --kp-cta-bg:       #232323;
+  --kp-cta-bdr:      #2E2E2E;
+  --kp-cta-fg:       #EBEBEB;
+  --kp-cta-bg-hover: #2C2C2C;
+
+  /* Secondary: ghost on the ground it sits on. */
+  --kp-alt-bg:       transparent;
+  --kp-alt-bdr:      #2E2E2E;
+  --kp-alt-fg:       #EBEBEB;
+  --kp-alt-bg-hover: #161616;
+
+  --kp-field-bg:  #101010;
+  --kp-field-bdr: #262626;
+
+  /* logo.svg is a light mark: correct as-is on a dark ground. */
+  --kp-logo-filter: none;
 }
 
-/* ---- 1. Atmospheric ground ------------------------------------------------- */
-body.layout_frontend {
-  background: linear-gradient(160deg, var(--kp-abyss) 0%, var(--kp-deep) 100%) !important;
-  background-attachment: fixed !important;
-  color: var(--kp-cream) !important;
+html.theme_light {
+  --kp-bg:         #FFFFFF;
+  --kp-bg-side:    #F7F7F7;
+  --kp-bg-hover:   #F0F0F0;
+  --kp-border:     #E5E5E5;
+  --kp-border-mid: #D4D4D4;
+  --kp-t1:         #111111;
+  --kp-t2:         #6B6B6B;
+  --kp-t3:         #A0A0A0;
+
+  /* Primary CTA: near-black on white. Border MATCHES the fill deliberately -
+     the reference's #D4D4D4 belongs to its light pill (.btn), which maps to the
+     SECONDARY button below; a near-black button ringed in light grey reads as a
+     rendering artefact. See token-map section 4. */
+  --kp-cta-bg:       #111111;
+  --kp-cta-bdr:      #111111;
+  --kp-cta-fg:       #FFFFFF;
+  --kp-cta-bg-hover: #2A2A2A;
+
+  /* Secondary: the reference's light pill. */
+  --kp-alt-bg:       #FAFAFA;
+  --kp-alt-bdr:      #D4D4D4;
+  --kp-alt-fg:       #111111;
+  --kp-alt-bg-hover: #EBEBEB;
+
+  --kp-field-bg:  #FFFFFF;
+  --kp-field-bdr: #D4D4D4;
+
+  /* logo.svg is a light mark: invert to read on a white ground. */
+  --kp-logo-filter: invert(1);
 }
 
-/* ---- 1b. Let the gradient actually show ------------------------------------
-   index.html ships <html class="theme_light">, and that theme paints OPAQUE
-   light backgrounds on the page containers, which sit on top of the body
-   gradient and hide it entirely. Making those containers transparent is the
-   fix; the alternative - painting each one dark - means chasing every new
-   container upstream ever adds. The form is excluded: it owns a real surface. */
-body.layout_frontend main:not(form),
-body.layout_frontend .tw-bg-background:not(form),
-body.layout_frontend .tw-bg-background-alt:not(form),
-body.layout_frontend app-root > *:not(form),
-body.layout_frontend .tw-min-h-screen:not(form) {
-  background-color: transparent !important;
+/* ---- 2. Re-point Vaultwarden's own ramp to the monochrome scale -------------
+   Set on <body> so every descendant reading rgb(var(--color-background)) picks
+   it up by inheritance. This covers BOTH surfaces (login shell and the
+   authenticated interior) in one place - the previous split existed only to
+   support forcing dark over light, which no longer happens. */
+html.theme_dark body {
+  --color-background:      12 12 12;    /* #0C0C0C  was  32 39 51 (blue-gray) */
+  --color-background-alt:  16 16 16;    /* #101010  was  18 26 39 */
+  --color-background-alt2: 22 22 22;    /* #161616  was  47 52 61 */
+  --color-background-alt3: 30 30 30;    /* #1E1E1E  was  48 57 70 */
+  --color-background-alt4: 16 16 16;    /* #101010  was  18 26 39 */
+  --color-text-main:      235 235 235;  /* #EBEBEB  drop blue cast */
+  --color-text-muted:     138 138 138;  /* #8A8A8A  drop blue cast */
+}
+
+html.theme_light body {
+  --color-background:      255 255 255; /* #FFFFFF */
+  --color-background-alt:  247 247 247; /* #F7F7F7 */
+  --color-background-alt2: 240 240 240; /* #F0F0F0 */
+  --color-background-alt3: 229 229 229; /* #E5E5E5 */
+  --color-background-alt4: 247 247 247; /* #F7F7F7 */
+  --color-text-main:        17 17 17;   /* #111111 */
+  --color-text-muted:      107 107 107; /* #6B6B6B */
+}
+
+/* Accent ramp -> neutral grey ladder, both themes. Bitwarden derives EVERY
+   accent from these two scales, so neutralising them here removes #175DDC at
+   the root instead of chasing each component that happens to use it. */
+html.theme_dark body,
+html.theme_light body {
+  --color-brand-050: 245 245 245;  --color-primary-050: 245 245 245;
+  --color-brand-100: 235 235 235;  --color-primary-100: 235 235 235;
+  --color-brand-200: 212 212 212;  --color-primary-200: 212 212 212;
+  --color-brand-300: 160 160 160;  --color-primary-300: 160 160 160;
+  --color-brand-400: 138 138 138;  --color-primary-400: 138 138 138;
+  --color-brand-500: 107 107 107;  --color-primary-500: 107 107 107;
+  --color-brand-600:  46  46  46;  --color-primary-600:  46  46  46;
+  --color-brand-700:  35  35  35;  --color-primary-700:  35  35  35;
+  --color-brand-800:  30  30  30;  --color-primary-800:  30  30  30;
+  --color-brand-900:  22  22  22;  --color-primary-900:  22  22  22;
+  --color-brand-950:  12  12  12;  --color-primary-950:  12  12  12;
+}
+
+/* ---- 3. Ground -------------------------------------------------------------
+   Flat, no gradient: in the reference the space IS the design. */
+body.layout_frontend,
+body:not(.layout_frontend) {
+  background-color: var(--kp-bg) !important;
   background-image: none !important;
+  color: var(--kp-t1) !important;
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif !important;
+  font-size: 14px !important;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* ---- 2. Brand marks --------------------------------------------------------
+/* ---- 4. Typography ---------------------------------------------------------
+   Inter is ALREADY bundled (fonts/inter.*.woff2) and already the app font, and
+   the live CSP is `font-src 'self'` - so the minimalist type treatment is the
+   REMOVAL of the previous Georgia serif display override, not a font addition.
+   Zero extra network requests, nothing for the CSP to block. */
+h1, h2, h3 {
+  font-family: inherit !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.3px !important;
+  color: var(--kp-t1) !important;
+}
+
+/* ---- 5. Brand marks --------------------------------------------------------
    The nav mark is an INLINE <svg viewBox="0 0 290 60"> inside
    <bit-svg aria-label="KobiiCraft Pass logo">, not the images/logo.svg file -
    which is why replacing that file alone changed nothing on screen. Hide the
@@ -75,9 +201,10 @@ body.layout_frontend bit-svg[aria-label="KobiiCraft Pass logo"] {
   background-repeat: no-repeat !important;
   background-position: left center !important;
   background-size: contain !important;
+  filter: var(--kp-logo-filter) !important;
 }
 
-/* Centre "safe" mark above the heading: keep the slot, swap the art. */
+/* Centre mark above the heading: keep the slot, swap the art. */
 body.layout_frontend svg[viewBox="0 8.33 80 66.67"] > * {
   display: none !important;
 }
@@ -86,209 +213,20 @@ body.layout_frontend svg[viewBox="0 8.33 80 66.67"] {
   background-repeat: no-repeat !important;
   background-position: center !important;
   background-size: contain !important;
+  filter: var(--kp-logo-filter) !important;
   opacity: .92 !important;
 }
 
-/* Bitwarden corner illustrations - stable content-based viewBoxes. */
+/* Bitwarden corner illustrations - stable content-based viewBoxes. The
+   reference design is empty space, so these go in both themes. */
 body.layout_frontend svg[viewBox="0 0 501 226"],
 body.layout_frontend svg[viewBox="0 0 506 297"] {
   display: none !important;
 }
 
-/* ---- 3. Editorial heading -------------------------------------------------- */
-body.layout_frontend h1,
-body.layout_frontend h2 {
-  font-family: var(--kp-display) !important;
-  font-weight: 600 !important;
-  letter-spacing: -0.02em !important;
-  color: var(--kp-cream) !important;
-}
-
-/* ---- 4. Form surface -------------------------------------------------------
-   Applied to the form container only. v1 also hit .tw-bg-background and
-   bit-card, which cascaded onto nested controls and produced the input /
-   checkbox overlap artefact. Narrowed deliberately. */
-body.layout_frontend form {
-  background-color: var(--kp-surface) !important;
-  border: 1px solid var(--kp-edge) !important;
-  border-radius: 12px !important;
-  box-shadow: none !important;
-}
-
-/* Text that sits directly on the dark surface. Buttons are excluded - they
-   own their own fg/bg pair below. */
-body.layout_frontend form > label,
-body.layout_frontend form label,
-body.layout_frontend bit-label,
-body.layout_frontend bit-form-field label {
-  color: var(--kp-cream) !important;
-}
-
-/* ---- 5. Inputs: explicit pair ---------------------------------------------- */
-body.layout_frontend input:not([type="checkbox"]):not([type="radio"]),
-body.layout_frontend select,
-body.layout_frontend textarea {
-  background-color: rgba(0, 0, 0, 0.30) !important;
-  color: var(--kp-cream) !important;
-  border: 1px solid var(--kp-edge) !important;
-  border-radius: 8px !important;
-}
-
-body.layout_frontend input:not([type="checkbox"]):not([type="radio"]):focus,
-body.layout_frontend select:focus,
-body.layout_frontend textarea:focus {
-  border-color: var(--kp-gold) !important;
-  outline: 1px solid var(--kp-gold) !important;
-}
-
-/* Chromium paints autofilled inputs with its own opaque background and text
-   colour, which beat a plain background-color declaration - that is why the
-   email field rendered light grey on a dark form. The inset box-shadow trick
-   is the only reliable way to repaint it, and -webkit-text-fill-color is what
-   actually controls autofilled text. Both halves of the pair, again. */
-body.layout_frontend input:-webkit-autofill,
-body.layout_frontend input:-webkit-autofill:hover,
-body.layout_frontend input:-webkit-autofill:focus,
-body.layout_frontend input:-internal-autofill-selected {
-  -webkit-text-fill-color: var(--kp-cream) !important;
-  -webkit-box-shadow: 0 0 0 1000px #12161F inset !important;
-  box-shadow: 0 0 0 1000px #12161F inset !important;
-  caret-color: var(--kp-cream) !important;
-}
-
-/* bit-form-field wraps the control; without this the wrapper keeps the light
-   theme fill and shows through around the input. */
-body.layout_frontend bit-form-field,
-body.layout_frontend bit-form-field > div {
-  background-color: transparent !important;
-}
-
-/* Muted helper text ("or" divider, hints) is dark-on-dark by default here. */
-body.layout_frontend .tw-text-muted,
-body.layout_frontend .tw-text-secondary,
-body.layout_frontend bit-hint {
-  color: rgba(250, 247, 242, .60) !important;
-}
-
-/* ---- 6. PRIMARY button: fg AND bg, plus hover and disabled -----------------
-   Verified rendering navy-on-cream and legible in staging. */
-body.layout_frontend button[buttontype="primary"],
-body.layout_frontend a[buttontype="primary"] {
-  background-color: var(--kp-navy) !important;
-  border-color: var(--kp-navy) !important;
-  color: var(--kp-cream) !important;
-}
-body.layout_frontend button[buttontype="primary"] *,
-body.layout_frontend a[buttontype="primary"] * {
-  color: var(--kp-cream) !important;
-}
-body.layout_frontend button[buttontype="primary"]:hover:not(:disabled) {
-  background-color: var(--kp-navy-lift) !important;
-  border-color: var(--kp-navy-lift) !important;
-}
-body.layout_frontend button[buttontype="primary"]:disabled {
-  background-color: rgba(31, 58, 95, .40) !important;
-  border-color: rgba(31, 58, 95, .40) !important;
-  color: rgba(250, 247, 242, .50) !important;
-}
-
-/* ---- 7. SECONDARY buttons: ghost, explicit pair ----------------------------
-   These render as light pills by default. On a dark ground that is both ugly
-   and, once any cream text lands on them, unreadable. Give them a real dark
-   background so the cream text they contain is guaranteed legible. */
-body.layout_frontend button:not([buttontype="primary"]),
-body.layout_frontend a[bitbutton]:not([buttontype="primary"]) {
-  background-color: transparent !important;
-  border: 1px solid var(--kp-edge) !important;
-  color: var(--kp-cream) !important;
-  border-radius: 8px !important;
-}
-body.layout_frontend button:not([buttontype="primary"]) *,
-body.layout_frontend a[bitbutton]:not([buttontype="primary"]) * {
-  color: var(--kp-cream) !important;
-}
-body.layout_frontend button:not([buttontype="primary"]):hover:not(:disabled) {
-  background-color: rgba(250, 247, 242, .08) !important;
-  border-color: var(--kp-gold) !important;
-}
-
-/* ---- 8. Links: gold is the single accent ----------------------------------- */
-body.layout_frontend a:not([bitbutton]):not([buttontype]) {
-  color: var(--kp-cream) !important;
-  text-underline-offset: 3px !important;
-}
-body.layout_frontend a:not([bitbutton]):not([buttontype]):hover {
-  color: var(--kp-gold) !important;
-}
-
-/* ---- 9. Legal footer -------------------------------------------------------
-   The Vaultwarden / Bitwarden(R) trademark disclaimer stays. It is a legal
-   notice disclaiming association with Bitwarden Inc., not decoration, and
-   removing it would be both an AGPL-attribution and a trademark problem.
-   Made discreet, never hidden - legibility is the requirement. */
-body.layout_frontend #vw-disclaimer,
-body.layout_frontend footer {
-  color: rgba(250, 247, 242, .48) !important;
-  font-size: 12px !important;
-  line-height: 1.5 !important;
-  letter-spacing: .2px !important;
-}
-
-
-/* ============================================================================
-   10. AUTHENTICATED VAULT INTERIOR
-   ----------------------------------------------------------------------------
-   The interior (post-unlock vault) has NO `layout_frontend` body class, so the
-   login-shell rules above never reach it. Scoped to body:not(.layout_frontend)
-   so the two surfaces stay independent.
-
-   Verified against a REAL logged-in session on a staging container (server
-   1.36.0 + this web vault), rendered in both native themes. The near-black
-   "Inkling" atmosphere comes from Bitwarden's own Dark theme; this layer adds
-   the KobiiCraft brand on top of it, so it works whichever theme the user picks.
-
-   Strategy: swap the accent HUE (Bitwarden blue -> KobiiCraft navy) at the
-   token level - the whole app derives its accent from --color-brand-* and
-   --color-primary-*. Primary buttons additionally get an explicit fg/bg pair
-   (HR-67) because the "+ New" button reads its blue from a utility class whose
-   token scope the palette override alone did not reach; the !important pair
-   wins regardless.
-   ============================================================================ */
-body:not(.layout_frontend) {
-  --color-brand-050: 233 238 245;  --color-primary-050: 233 238 245;
-  --color-brand-100: 210 221 235;  --color-primary-100: 210 221 235;
-  --color-brand-200: 168 187 213;  --color-primary-200: 168 187 213;
-  --color-brand-300: 116 146 186;  --color-primary-300: 116 146 186;
-  --color-brand-400:  74 110 158;  --color-primary-400:  74 110 158;
-  --color-brand-500:  47  78 126;  --color-primary-500:  47  78 126;
-  --color-brand-600:  31  58  95;  --color-primary-600:  31  58  95;
-  --color-brand-700:  31  58  95;  --color-primary-700:  24  45  74;
-  --color-brand-800:  24  45  74;  --color-primary-800:  18  34  56;
-  --color-brand-900:  18  34  56;  --color-primary-900:  14  26  43;
-  --color-brand-950:  12  22  37;  --color-primary-950:  10  16  27;
-}
-
-/* Primary buttons ("+ New", "New item", dialog CTAs): explicit navy pair. */
-body:not(.layout_frontend) button[buttontype="primary"],
-body:not(.layout_frontend) a[buttontype="primary"] {
-  background-color: var(--kp-navy) !important;
-  border-color: var(--kp-navy) !important;
-  color: var(--kp-cream) !important;
-}
-body:not(.layout_frontend) button[buttontype="primary"] *,
-body:not(.layout_frontend) a[buttontype="primary"] * {
-  color: var(--kp-cream) !important;
-}
-body:not(.layout_frontend) button[buttontype="primary"]:hover:not(:disabled),
-body:not(.layout_frontend) a[buttontype="primary"]:hover:not(:disabled) {
-  background-color: var(--kp-navy-lift) !important;
-  border-color: var(--kp-navy-lift) !important;
-}
-
-/* Sidebar wordmark: the interior mark is an inline <svg viewBox="0 0 800 200">
-   inside <bit-nav-logo> (a DIFFERENT viewBox than the login's 290x60, and NOT
-   the logo-white.svg file, which the bundle never references). Hide it, paint
-   our asset - the sidebar is dark in both themes so the light logo reads. */
+/* Interior sidebar wordmark: a DIFFERENT inline svg (viewBox 0 0 800 200)
+   inside <bit-nav-logo>, and NOT logo-white.svg, which the bundle never
+   references. Hide it, paint our asset. */
 body:not(.layout_frontend) bit-nav-logo svg[viewBox="0 0 800 200"] {
   display: none !important;
 }
@@ -300,42 +238,239 @@ body:not(.layout_frontend) bit-nav-logo a {
   background-repeat: no-repeat !important;
   background-position: left center !important;
   background-size: contain !important;
+  filter: var(--kp-logo-filter) !important;
 }
 
-/* ============================================================================
-   11. DASH ECOSYSTEM ALIGNMENT - neutral near-black atmosphere
-   ----------------------------------------------------------------------------
-   Coherence with dash.kobicraft.net (HR-KOBIICRAFT-ECOSYSTEM-COHERENCE-001).
-   Bitwarden's Dark theme is a BLUE-GRAY (--color-background: 32 39 51). The dash
-   (kobicraft-panel DESIGN.md calco :root) is NEUTRAL near-black (--bg #0a0a0a).
-   This block re-points the dark-theme background + text ramp to the dash's neutral
-   values so a user who uses both products reads ONE ecosystem. Every value is read
-   verbatim from each project's source of truth, never guessed
-   (vault/docs/KOBIICRAFT_PASS_DASH_TOKEN_MAP_2026-07-21.md in KobiiCraft Core Files).
+/* ---- 6. Login form surface -------------------------------------------------
+   Applied to the form container ONLY. An earlier revision also hit
+   .tw-bg-background and bit-card, which cascaded onto nested controls and
+   produced an input/checkbox overlap artefact. Narrowed deliberately. */
+body.layout_frontend form {
+  background-color: var(--kp-bg-side) !important;
+  color: var(--kp-t1) !important;
+  border: 1px solid var(--kp-border) !important;
+  border-radius: 10px !important;
+  box-shadow: none !important;
+}
 
-   Accent stays navy/gold (section 10) - that is Pass's product identity ON the
-   shared near-black shell, NOT the dash's white/blue tint (same ecosystem, distinct
-   product). Vault rows stay FLAT: the dash keeps tables / nav / list rows flat with
-   hard borders and reserves glass for elevated cards + modals only (DESIGN.md 9.8),
-   so glass-on-rows is a deliberate non-goal, not an omission.
+body.layout_frontend form label,
+body.layout_frontend bit-label,
+body.layout_frontend bit-form-field label {
+  background-color: transparent !important;
+  color: var(--kp-t1) !important;
+  font-weight: 500 !important;
+}
 
-   Theme class is on <html> (index.html ships theme_light; dark -> html.theme_dark).
-   Scoped to html.theme_dark + the authenticated interior body:not(.layout_frontend):
-   the light-theme interior and the login shell are deliberately untouched. Custom
-   properties inherit, so setting them on <body> re-points every descendant that
-   reads rgb(var(--color-background)).
+/* ---- 7. Fields: explicit pair ----------------------------------------------
+   Hint text shown inside an empty field is deliberately left alone: browsers
+   derive its colour from the input's own `color`, which IS set per theme here,
+   so it stays legible in both without an extra rule. */
+body input:not([type="checkbox"]):not([type="radio"]),
+body select,
+body textarea {
+  background-color: var(--kp-field-bg) !important;
+  color: var(--kp-t1) !important;
+  border: 1px solid var(--kp-field-bdr) !important;
+  border-radius: 6px !important;
+}
 
-   FAIL-CLOSED before any prod cutover (HR-67): overriding background tokens on a
-   live credential vault must be proven on a REAL logged-in render (both a cipher
-   list and an open item + a dialog), watching for any --color-text-contrast
-   (18 26 39, dark) landing on a now-darker --color-background-alt (15 15 15).
+body input:not([type="checkbox"]):not([type="radio"]):focus,
+body select:focus,
+body textarea:focus {
+  background-color: var(--kp-field-bg) !important;
+  color: var(--kp-t1) !important;
+  border-color: var(--kp-t2) !important;
+  outline: 1px solid var(--kp-t2) !important;
+}
+
+/* Chromium paints autofilled inputs with its OWN opaque background and text
+   colour, which beats a plain background-color declaration - that is why the
+   email field once rendered light grey on a dark form. The inset box-shadow is
+   the only reliable repaint, and -webkit-text-fill-color is what actually
+   controls autofilled text. Both halves of the pair, again. Themed via the
+   token so light mode does not inherit a dark fill. */
+body input:-webkit-autofill,
+body input:-webkit-autofill:hover,
+body input:-webkit-autofill:focus,
+body input:-internal-autofill-selected {
+  -webkit-text-fill-color: var(--kp-t1) !important;
+  -webkit-box-shadow: 0 0 0 1000px var(--kp-field-bg) inset !important;
+  box-shadow: 0 0 0 1000px var(--kp-field-bg) inset !important;
+  caret-color: var(--kp-t1) !important;
+}
+
+/* bit-form-field wraps the control; without this the wrapper keeps its theme
+   fill and shows through around the input. */
+body bit-form-field,
+body bit-form-field > div {
+  background-color: transparent !important;
+}
+
+body .tw-text-muted,
+body .tw-text-secondary,
+body bit-hint {
+  background-color: transparent !important;
+  color: var(--kp-t2) !important;
+}
+
+/* ---- 8. PRIMARY button: fg AND bg, plus hover and disabled -----------------
+   Applies to BOTH surfaces (login CTA and the interior "+ New"). The interior
+   button reads its fill from a utility class whose token scope the ramp
+   override alone did not reach, so the explicit !important pair is what
+   actually wins - retained from the navy build, re-pointed monochrome. */
+body button[buttontype="primary"],
+body a[buttontype="primary"] {
+  background-color: var(--kp-cta-bg) !important;
+  border: 1px solid var(--kp-cta-bdr) !important;
+  color: var(--kp-cta-fg) !important;
+  border-radius: 6px !important;
+  font-weight: 500 !important;
+  letter-spacing: -0.01em !important;
+}
+body button[buttontype="primary"] *,
+body a[buttontype="primary"] * {
+  color: var(--kp-cta-fg) !important;
+}
+body button[buttontype="primary"]:hover:not(:disabled),
+body a[buttontype="primary"]:hover:not(:disabled) {
+  background-color: var(--kp-cta-bg-hover) !important;
+  border-color: var(--kp-cta-bg-hover) !important;
+  color: var(--kp-cta-fg) !important;
+}
+body button[buttontype="primary"]:disabled {
+  background-color: var(--kp-bg-hover) !important;
+  border-color: var(--kp-border-mid) !important;
+  color: var(--kp-t3) !important;
+}
+
+/* ---- 9. SECONDARY buttons: explicit pair ----------------------------------- */
+body button[bitbutton]:not([buttontype="primary"]),
+body a[bitbutton]:not([buttontype="primary"]) {
+  background-color: var(--kp-alt-bg) !important;
+  border: 1px solid var(--kp-alt-bdr) !important;
+  color: var(--kp-alt-fg) !important;
+  border-radius: 6px !important;
+}
+body button[bitbutton]:not([buttontype="primary"]) *,
+body a[bitbutton]:not([buttontype="primary"]) * {
+  color: var(--kp-alt-fg) !important;
+}
+body button[bitbutton]:not([buttontype="primary"]):hover:not(:disabled),
+body a[bitbutton]:not([buttontype="primary"]):hover:not(:disabled) {
+  background-color: var(--kp-alt-bg-hover) !important;
+  border-color: var(--kp-t3) !important;
+  color: var(--kp-alt-fg) !important;
+}
+
+/* ---- 10. Links: no blue, ever ---------------------------------------------- */
+body a:not([bitbutton]):not([buttontype]) {
+  background-color: transparent !important;
+  color: var(--kp-t1) !important;
+  text-underline-offset: 3px !important;
+}
+body a:not([bitbutton]):not([buttontype]):hover {
+  background-color: transparent !important;
+  color: var(--kp-t2) !important;
+}
+
+/* ---- 11. Hairline borders --------------------------------------------------
+   1px, no decorative shadow. In the reference the border IS the separation. */
+body bit-card,
+body .tw-border,
+body table,
+body th,
+body td {
+  border-color: var(--kp-border) !important;
+}
+
+/* ---- 12. Legal footer ------------------------------------------------------
+   The Vaultwarden / Bitwarden(R) trademark disclaimer STAYS. It is a legal
+   notice disclaiming association with Bitwarden Inc., not decoration, and
+   removing it would be both an AGPL-attribution and a trademark problem.
+   Made discreet, never hidden - legibility is the requirement. */
+body #vw-disclaimer,
+body footer {
+  background-color: transparent !important;
+  color: var(--kp-t3) !important;
+  font-size: 12px !important;
+  line-height: 1.5 !important;
+}
+
+/* ---- 13. Theme toggle ------------------------------------------------------
+   Rendered by js/kp-theme.js. Fixed top-right so it is reachable on every
+   screen, including the login shell where Vaultwarden offers no theme control
+   at all. z-index sits above the app shell but below modal overlays. */
+#kp-theme-toggle {
+  position: fixed !important;
+  top: 14px !important;
+  right: 14px !important;
+  z-index: 900 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 32px !important;
+  height: 32px !important;
+  padding: 0 !important;
+  font-size: 14px !important;
+  line-height: 1 !important;
+  cursor: pointer !important;
+  border-radius: 6px !important;
+  background-color: var(--kp-bg-side) !important;
+  border: 1px solid var(--kp-border) !important;
+  color: var(--kp-t1) !important;
+  transition: background-color .15s ease, border-color .15s ease !important;
+}
+#kp-theme-toggle:hover {
+  background-color: var(--kp-bg-hover) !important;
+  border-color: var(--kp-border-mid) !important;
+  color: var(--kp-t1) !important;
+}
+#kp-theme-toggle:focus-visible {
+  outline: 2px solid var(--kp-t2) !important;
+  outline-offset: 2px !important;
+}
+/* ---- 14. Semantic bg/text family -------------------------------------------
+   Discovered empirically AFTER the first gate run failed: the login ground is
+   painted by Bitwarden's own
+
+       body.layout_frontend { background-color: var(--color-bg-tertiary) !important }
+
+   at specificity (0,1,1), which outranked a bare `body { ... !important }` at
+   (0,0,1). The measured result was #020618 (dark) / #F2F6FA (light) - both blue.
+   A declared rule is only a hypothesis until you check what WINS the cascade.
+
+   Two corrections, belt and braces: the ground rule above now also matches at
+   (0,1,1) and loads later, AND the semantic tokens themselves are re-pointed
+   here so every OTHER component reading them turns monochrome too, instead of
+   this being chased one selector at a time.
+
+   NOTE the convention split, verified on the live render: this --color-bg-*
+   family holds HEX, while --color-background* / --color-text-* hold
+   space-separated RGB triplets. Writing a triplet here silently voids the
+   declaration. Values below are hex on purpose.
    ============================================================================ */
-html.theme_dark body:not(.layout_frontend) {
-  --color-background:      10 10 10;   /* dash --bg        (was 32 39 51) */
-  --color-background-alt:  15 15 15;   /* dash --bg-elev   (was 18 26 39) sidebar / flat-elev */
-  --color-background-alt2: 26 26 26;   /* dash --bg-hover  (was 47 52 61) */
-  --color-background-alt3: 29 29 29;   /* dash --bg-active (was 48 57 70) */
-  --color-background-alt4: 15 15 15;   /* dash --bg-elev   (was 18 26 39) */
-  --color-text-main:  237 237 237;     /* dash --text      (was 243 246 249 - drop blue cast) */
-  --color-text-muted: 138 138 138;     /* dash --text-mut  (was 136 152 181 - drop blue cast) */
+html.theme_dark body {
+  --color-bg-primary:     #101010;  /* was #0f172b  elevated surface */
+  --color-bg-secondary:   #161616;  /* was #1d293d */
+  --color-bg-tertiary:    #0C0C0C;  /* was #020618  THE login ground */
+  --color-bg-quaternary:  #262626;  /* was #314158 */
+  --color-bg-contrast:    #EBEBEB;  /* was #e6ecf2 */
+  --color-bg-disabled:    #161616;  /* was #020618 */
+  --color-bg-dark:        #161616;  /* was #1d293d */
+  --color-bg-hover:       rgba(255, 255, 255, 0.05);
+  --color-bg-overlay:     rgba(0, 0, 0, 0.85);
+  --color-border-base:    #1E1E1E;  /* was #314158 */
+}
+
+html.theme_light body {
+  --color-bg-primary:     #FFFFFF;
+  --color-bg-secondary:   #F7F7F7;  /* was #f2f6fa */
+  --color-bg-tertiary:    #FFFFFF;  /* was #f2f6fa  THE login ground */
+  --color-bg-quaternary:  #D4D4D4;  /* was #d5dde8 */
+  --color-bg-contrast:    #111111;  /* was #1d293d */
+  --color-bg-disabled:    #F0F0F0;  /* was #e6ecf2 */
+  --color-bg-dark:        #111111;  /* was #1d293d */
+  --color-bg-hover:       rgba(0, 0, 0, 0.04);
+  --color-bg-overlay:     rgba(0, 0, 0, 0.30);
+  --color-border-base:    #E5E5E5;  /* was #d5dde8 */
 }
