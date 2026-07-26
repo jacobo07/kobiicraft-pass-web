@@ -474,3 +474,44 @@ html.theme_light body {
   --color-bg-overlay:     rgba(0, 0, 0, 0.30);
   --color-border-base:    #E5E5E5;  /* was #d5dde8 */
 }
+/* ---- 15. Theme toggle DOCKED in the vault header ---------------------------
+   js/kp-theme.js sets [data-kp-docked] once it has inserted the control into
+   the header flex row, immediately before the "+ New" button. The login shell
+   has no header, so there the attribute is absent and section 13's fixed
+   top-right placement still applies.
+
+   Specificity is deliberate: #id[attr] is (1,1,0) and beats section 13's plain
+   #id (1,0,0), so `position: static` reliably wins over `position: fixed`.
+   Two !important declarations do NOT settle by source order when specificity
+   differs - the lesson from Trap 314, applied on purpose this time.
+
+   No margin is declared: the header row supplies its own gap, so borrowing it
+   keeps the control spaced exactly like Vaultwarden's own buttons and cannot
+   drift if that spacing is retuned upstream.
+
+   Deliberately quiet - transparent ground, no border - so it reads as part of
+   the header chrome rather than competing with the primary "+ New" CTA. The
+   background is still declared explicitly rather than omitted: CONTRAST LAW
+   wants both halves of the pair named, and `transparent` is a decision. */
+#kp-theme-toggle[data-kp-docked] {
+  position: static !important;
+  top: auto !important;
+  right: auto !important;
+  z-index: auto !important;
+  width: 40px !important;
+  height: 40px !important;
+  flex: 0 0 auto !important;
+  font-size: 17px !important;
+  background-color: transparent !important;
+  border: 1px solid transparent !important;
+  color: var(--kp-t1) !important;
+}
+#kp-theme-toggle[data-kp-docked]:hover {
+  background-color: var(--kp-bg-hover) !important;
+  border-color: var(--kp-border) !important;
+  color: var(--kp-t1) !important;
+}
+#kp-theme-toggle[data-kp-docked]:focus-visible {
+  outline: 2px solid var(--kp-t2) !important;
+  outline-offset: 2px !important;
+}
