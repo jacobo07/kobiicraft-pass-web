@@ -65,12 +65,45 @@
   // compiled bundle; the first one actually on screen wins.
   var ANCHORS = ["vault-new-cipher-menu", "product-switcher", "app-account-menu"];
 
-  var LABEL = {
-    // Shown while DARK is active; activating it switches to light.
-    dark: { glyph: "\u2600\uFE0F", aria: "Cambiar a modo claro" },
-    // Shown while LIGHT is active; activating it switches to dark.
-    light: { glyph: "\uD83C\uDF19", aria: "Cambiar a modo oscuro" }
+  /* Glyph is language-independent; the accessible name is not.
+     Keyed by theme CURRENTLY ACTIVE - the control shows where it will take you,
+     so the sun appears while dark is active. */
+  var GLYPH = { dark: "\u2600\uFE0F", light: "\uD83C\uDF19" };
+
+  /* Contract clause C-2: no screen mixes languages. An earlier revision
+     hardcoded Spanish here, which meant an English session rendered a Spanish
+     accessible name on every screen - a mixed-language surface BY CONSTRUCTION,
+     not by configuration. C-4 adds that language and appearance are independent
+     controls: this control must therefore FOLLOW the app language, never assert
+     one of its own.
+
+     Adding a locale is one row. A language with no row falls back to English,
+     which is Vaultwarden's own default - and that fallback is a KNOWN C-2 gap
+     for that language, to be recorded as debt rather than hidden, because a
+     silent wrong-language label is exactly what this change removes. */
+  var STRINGS = {
+    en: { dark: "Switch to light mode", light: "Switch to dark mode" },
+    es: { dark: "Cambiar a modo claro",  light: "Cambiar a modo oscuro" }
   };
+
+  /* Vaultwarden stamps the active locale on <html lang>. navigator.language is
+     the fallback because that is the same signal Vaultwarden itself uses to
+     choose a locale when the user has not set one, so the two agree by
+     construction rather than by coincidence. */
+  function langTag() {
+    var raw = "";
+    try {
+      raw = document.documentElement.getAttribute("lang") ||
+            (navigator && navigator.language) || "";
+    } catch (err) {
+      raw = "";
+    }
+    return String(raw).toLowerCase().split("-")[0];
+  }
+
+  function strings() {
+    return STRINGS[langTag()] || STRINGS.en;
+  }
 
   var reported = {};
   function guard(label, fn) {
@@ -134,11 +167,20 @@
     }
   }
 
+  /* Re-read on every paint rather than caching: Angular can swap the locale
+     without a reload, and a cached label would then disagree with the screen
+     around it - the C-2 failure re-introduced by an optimisation. */
   function paintButton(btn) {
-    var face = LABEL[activeTheme()];
-    if (btn.textContent !== face.glyph) btn.textContent = face.glyph;
-    btn.setAttribute("aria-label", face.aria);
-    btn.setAttribute("title", face.aria);
+    var theme = activeTheme();
+    var tag = langTag();
+    var glyph = GLYPH[theme];
+    var aria = strings()[theme];
+    if (btn.textContent !== glyph) btn.textContent = glyph;
+    btn.setAttribute("aria-label", aria);
+    btn.setAttribute("title", aria);
+    /* Declare the label's own language so a screen reader pronounces it with
+       the right voice instead of reading Spanish through an English one. */
+    btn.setAttribute("lang", STRINGS[tag] ? tag : "en");
   }
 
   function onScreen(el) {
