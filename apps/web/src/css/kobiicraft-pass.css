@@ -515,3 +515,156 @@ html.theme_light body {
   outline: 2px solid var(--kp-t2) !important;
   outline-offset: 2px !important;
 }
+
+/* ---- 16. Semantic colour roles - DECLARED, DELIBERATELY UNCONSUMED -----------
+   DS-02 II.3: the complete meaning of colour in KobiiCraft Pass. Four state
+   roles plus an accent that is NOT a state.
+
+   ---------------------------------------------------------------------------
+   WHY NOTHING BELOW HAS A SELECTOR
+   ---------------------------------------------------------------------------
+   HR-83 and Contract clause C-26: an element may exist only if its capability
+   exists. DS-02 II.3 rule 1: green asserts that the system MEASURED something
+   and it passed.
+
+   Vaultwarden's interior reports no health, expiry, rotation or coverage state.
+   There is nothing measured here to be green about. Painting a vault row green
+   because the row exists would assert a measurement that never happened - the
+   compendium's designated worst-case failure, an optimistic green over an
+   uninstrumented control. Grey, not green, is the colour of "we do not know".
+
+   So this block defines a vocabulary and paints NOTHING. That is the whole and
+   correct scope until a real state exists to bind. When one does, the consumer
+   must also carry the II.3 redundancy spec - colour plus at least two of
+   {text, shape, position} - because colour never carries a state alone (C-18).
+
+   ---------------------------------------------------------------------------
+   VALUE PROVENANCE - two different authority classes, do not conflate
+   ---------------------------------------------------------------------------
+   GREEN is REALIDAD VERIFICADA: read from the Owner's reference HTML via
+   DS-02 II.3 (light #16A34A on #F0FDF4; dark brightens to #22C55E over a
+   tinted ground, ringed #1a3d27).
+
+   AMBER, RED, NEUTRAL and ACCENT are ARQUITECTURA PROPUESTA: the compendium
+   specifies their MEANING but no values, because the reference contained only
+   a green. They are derived here to sit in the same tonal family and every
+   pair is COMPUTED against its own ground, never eyeballed - II.3 records that
+   on a neutral ground a near-miss on contrast is invisible to review, since no
+   adjacent hue exists to make the error obvious. Measured ratios are in the
+   table at vault/pass/implementation/PASS_SPRINT0_CONTRAST_PROOF.md; all clear
+   4.5:1.
+
+   The ACCENT is drawn from the neutral ladder, never from the semantic hues
+   (II.3 rule 3): selection and focus must stay readable on top of ANY state,
+   and an accent that was also a state would put two meanings in one channel.
+   It resolves to the value the primary CTA already uses, so "the accent" and
+   "the primary action" cannot drift apart.
+
+   Note the convention split from section 14: these are HEX, matching the
+   --color-bg-* family. A space-separated triplet here would silently void the
+   declaration. Contrast Law (C-28) applies to every future consumer: never a
+   foreground without its background in the same rule - which is why each role
+   ships fg, bg and border together rather than a bare hue.
+   ============================================================================ */
+/* WHY EACH ROLE SHIPS A -dot AND A -text, NOT ONE HUE
+   II.3's redundancy spec renders a state as a dot PLUS a word. Those are two
+   different accessibility objects with two different WCAG floors: a dot is a
+   non-text graphical indicator (3:1), a word is text (4.5:1).
+
+   Collapsing them into one value is not a rounding error. The first pass of
+   this block did exactly that and the contrast gate failed the compendium's
+   OWN reference green: #16A34A measures 3.30:1 on white - correct as a dot,
+   below the floor as text. The reference was never wrong; it was being asked
+   to do a job it was not specified for. Hence the split: the reference hue is
+   preserved verbatim as the dot, and a darker sibling carries any coloured
+   text. Every value below is the output of that search, not a choice.
+
+   Proof: vault/pass/implementation/PASS_SPRINT0_CONTRAST_PROOF.md (28/28). */
+html.theme_light body {
+  /* PROTEGIDO - verified protected: measured, current, within policy. */
+  --kp-state-ok-dot:      #16A34A;   /* 3.15:1 - reference value, preserved */
+  --kp-state-ok-text:     #15803D;   /* 4.79:1 */
+  --kp-state-ok-bg:       #F0FDF4;
+  --kp-state-ok-bdr:      #4ADE80;   /* 1.74:1 edge */
+
+  /* REVISION - approaching a threshold, or a policy question a human owes. */
+  --kp-state-watch-dot:   #D97706;   /* 3.07:1 */
+  --kp-state-watch-text:  #B45309;   /* 4.84:1 */
+  --kp-state-watch-bg:    #FFFBEB;
+  --kp-state-watch-bdr:   #FBBF24;   /* 1.67:1 edge */
+
+  /* RIESGO - expired, exposed, failed, compromised. A STATE, never a control:
+     destructive buttons are communicated by IV.3's confirmation ladder, not by
+     fill. A red delete button beside a red expiry badge trains the operator to
+     stop reading red. */
+  --kp-state-risk-dot:    #DC2626;   /* 4.41:1 */
+  --kp-state-risk-text:   #B91C1C;   /* 5.91:1 */
+  --kp-state-risk-bg:     #FEF2F2;
+  --kp-state-risk-bdr:    #F87171;   /* 2.77:1 edge */
+
+  /* NEUTRAL - unknown, inactive, NOT MEASURED. Reuses the existing text ladder
+     on purpose: "we do not know" is not a new colour, it is the absence of a
+     claim. */
+  --kp-state-neutral-dot:  #6B6B6B;  /* 4.97:1 */
+  --kp-state-neutral-text: #6B6B6B;  /* 4.97:1 */
+  --kp-state-neutral-bg:   #F7F7F7;
+  --kp-state-neutral-bdr:  #D4D4D4;  /* 1.48:1 edge */
+
+  /* Accent: selection, focus, primary action. Never a state. */
+  --kp-accent:          #111111;     /* 18.88:1 */
+  --kp-accent-fg:       #FFFFFF;
+  --kp-accent-ring:     #6B6B6B;
+}
+
+html.theme_dark body {
+  /* Same meanings, independently designed values - C-21: dark is not an
+     inversion. Each hue is brightened against graphite and given its own
+     tinted ground and edge, exactly as the reference does for green.
+
+     Dot and text converge here, and that is a RESULT rather than a shortcut:
+     on graphite every role already clears 4.5:1 at its dot value, so no darker
+     sibling is needed. Light mode is the constrained theme, not dark - which
+     is precisely why C-22 refuses to treat light as secondary. */
+  --kp-state-ok-dot:      #22C55E;   /* 6.68:1 */
+  --kp-state-ok-text:     #22C55E;   /* 6.68:1 */
+  --kp-state-ok-bg:       #142A1E;
+  --kp-state-ok-bdr:      #235233;   /* 2.17:1 edge */
+
+  --kp-state-watch-dot:   #F5B23C;   /* 8.71:1 */
+  --kp-state-watch-text:  #F5B23C;   /* 8.71:1 */
+  --kp-state-watch-bg:    #2A1F0A;
+  --kp-state-watch-bdr:   #4A3A1F;   /* 1.78:1 edge */
+
+  --kp-state-risk-dot:    #F26D6D;   /* 5.94:1 */
+  --kp-state-risk-text:   #F26D6D;   /* 5.94:1 */
+  --kp-state-risk-bg:     #2A1414;
+  --kp-state-risk-bdr:    #5A2424;   /* 1.60:1 edge */
+
+  --kp-state-neutral-dot:  #8A8A8A;  /* 5.51:1 */
+  --kp-state-neutral-text: #8A8A8A;  /* 5.51:1 */
+  --kp-state-neutral-bg:   #101010;
+  --kp-state-neutral-bdr:  #2E2E2E;  /* 1.44:1 edge */
+
+  --kp-accent:          #EBEBEB;     /* 16.41:1 */
+  --kp-accent-fg:       #0C0C0C;
+  --kp-accent-ring:     #8A8A8A;
+}
+
+/* ---- 17. C-26: the product switcher --------------------------------------
+   DS-01 I.5 ruled this RE-JUSTIFY: "meaningful only if Pass hosts multiple
+   products. Today it does not." C-26 - an element may exist only if its
+   capability exists - makes exists-but-empty a lie, and a nav affordance that
+   promises products which do not exist erodes trust in every other one.
+
+   Hidden with visibility rather than display:none ON PURPOSE. kp-theme.js
+   docks the theme toggle against an anchor chain
+   (vault-new-cipher-menu -> product-switcher -> app-account-menu) and tests
+   each candidate with getBoundingClientRect(). display:none collapses the box
+   to 0x0, which reads as off-screen and silently drops the middle link of that
+   chain; visibility:hidden keeps the geometry, so the fallback still works on
+   the Trash screen where "+ New" is absent. The element also stops taking
+   pointer events, so nothing invisible remains clickable. */
+body:not(.layout_frontend) product-switcher {
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
