@@ -668,3 +668,166 @@ body:not(.layout_frontend) product-switcher {
   visibility: hidden !important;
   pointer-events: none !important;
 }
+
+/* ---- 18. Navigation chrome: the --color-nav-* family ------------------------
+   THE reason the sidebar stayed near-black while theme_light was active.
+
+   Bitwarden paints the side nav from its own token family, consumed through
+   three utilities in the shipped stylesheet:
+
+       .tw-bg-bg-nav       { background-color: var(--color-nav-bg-primary); }
+       .tw-text-fg-nav     { color:            var(--color-nav-fg-primary); }
+       .tw-bg-bg-nav-hover { background-color: var(--color-nav-bg-primary-hover); }
+
+   and <nav id="bit-side-nav" class="... tw-bg-bg-nav tw-text-fg-nav"> carries
+   them. This sheet referenced --color-nav- ZERO times, so nothing here ever
+   competed with it.
+
+   It was never a cascade failure. Upstream ships a near-black sidebar in LIGHT
+   mode deliberately: the base scope hardcodes
+
+       --color-nav-bg-primary: #212529;
+
+   and .theme_dark is the only block that overrides it. The stock .theme_light
+   block is SIXTY-NINE characters long - light is not a theme in that
+   stylesheet, it is the base scope. So a rule keyed on `html.theme_light body`
+   had nothing to beat: the value it needed to displace lived unscoped.
+
+   Consequence for maintenance: a rebase re-asserts #212529. Upstream is not
+   drifting toward us and never will, because from its point of view nothing is
+   broken. This block is a permanent override, not a temporary patch.
+
+   NOTATION - a THIRD convention in the same stylesheet. Section 2's
+   --color-background* family holds space-separated RGB triplets; section 14's
+   --color-bg-* family holds HEX; this family holds RAW COLOUR (hex or rgba())
+   consumed directly by var(). Writing a triplet here voids the declaration
+   silently, exactly as it does in the other two.
+
+   -secondary mirrors -primary throughout. side-nav.component.html swaps the
+   primary tokens for the secondary ones via an inline [style] when
+   variant() === 'secondary', so mirroring them makes the result independent of
+   which variant a layout happens to choose - one less thing to re-verify after
+   an upstream change.
+
+   Ratios are computed against the ground each value actually sits on. Full
+   derivation: vault/docs/KOBIICRAFT_PASS_LIGHT_THEME_NAV_AUDIT_2026-07-30.md
+   ============================================================================ */
+html.theme_light body {
+  --color-nav-bg-primary:                #F7F7F7;
+  --color-nav-bg-secondary:              #F7F7F7;
+  --color-nav-bg-primary-strong:         #EBEBEB;   /* active item ground */
+  --color-nav-bg-secondary-strong:       #EBEBEB;
+  --color-nav-bg-primary-hover:          rgba(0, 0, 0, 0.04);
+  --color-nav-bg-secondary-hover:        rgba(0, 0, 0, 0.04);
+  --color-nav-bg-primary-hover-strong:   rgba(0, 0, 0, 0.08);
+  --color-nav-bg-secondary-hover-strong: rgba(0, 0, 0, 0.08);
+  --color-nav-fg-primary:                #6B6B6B;   /* 4.97:1 on #F7F7F7 */
+  --color-nav-fg-secondary:              #6B6B6B;
+  --color-nav-border-primary:            #E5E5E5;
+  --color-nav-border-secondary:          #E5E5E5;
+  --color-nav-border-primary-focus:      #111111;
+  --color-nav-border-secondary-focus:    #111111;
+}
+
+html.theme_dark body {
+  --color-nav-bg-primary:                #101010;
+  --color-nav-bg-secondary:              #101010;
+  --color-nav-bg-primary-strong:         #262626;
+  --color-nav-bg-secondary-strong:       #262626;
+  --color-nav-bg-primary-hover:          rgba(255, 255, 255, 0.05);
+  --color-nav-bg-secondary-hover:        rgba(255, 255, 255, 0.05);
+  --color-nav-bg-primary-hover-strong:   rgba(255, 255, 255, 0.10);
+  --color-nav-bg-secondary-hover-strong: rgba(255, 255, 255, 0.10);
+  --color-nav-fg-primary:                #8A8A8A;   /* 5.51:1 on #101010 */
+  --color-nav-fg-secondary:              #8A8A8A;
+  --color-nav-border-primary:            #1E1E1E;
+  --color-nav-border-secondary:          #1E1E1E;
+  --color-nav-border-primary-focus:      #EBEBEB;
+  --color-nav-border-secondary-focus:    #EBEBEB;
+}
+
+/* ---- 19. Shell chrome: sidebar edge, header edge, active item, separator ----
+   Section 18 re-points the tokens so every consumer follows. The two rules
+   below are the belt to that braces: they name the elements directly, so the
+   result does not depend on upstream keeping those utility classes on those
+   elements. Same both-corrections pattern section 14 records.
+
+   #bit-side-nav is an ID that upstream sets in the template - a stronger hook
+   than any Tailwind class here, and the only ID on the element. */
+body:not(.layout_frontend) #bit-side-nav {
+  background-color: var(--kp-bg-side) !important;
+  color: var(--kp-t2) !important;
+  border-right: 1px solid var(--kp-border) !important;
+}
+
+/* INACTIVE nav links. This rule exists because of a rule EARLIER IN THIS FILE,
+   not because of anything upstream does.
+
+   Section 10 ("no blue, ever") is `body a:not([bitbutton]):not([buttontype])`
+   at specificity (0,2,2) with !important. A sidebar link matches it - it is an
+   <a> carrying neither attribute - and (0,2,2)!important outranks Tailwind's
+   `.!tw-text-fg-nav` at (0,1,0)!important. So section 10 was painting every nav
+   link with --kp-t1 and section 18's --color-nav-fg-primary never reached the
+   text, only the ground.
+
+   Re-pointing a token is not enough when a local rule already hardcodes the
+   property that token feeds. Adding an ID to the selector takes this to
+   (1,1,2), which beats (0,2,2) on the ID column alone.
+
+   The consumed value is the nav TOKEN, not --kp-t2, so section 18 stays the
+   single source for nav foreground even though the two currently coincide. */
+body:not(.layout_frontend) #bit-side-nav a {
+  background-color: transparent !important;
+  color: var(--color-nav-fg-primary) !important;
+}
+
+/* Active nav item. The hook is an ATTRIBUTE, not a class: nav-item.component
+   uses `routerLinkActive` bare (which adds no class) and binds
+   ariaCurrentWhenActive, whose declared default is "page"
+   (nav-item.component.ts:91) - so the active link renders aria-current="page".
+   A `.active` rule would have been dead code.
+
+   Weight carries the state alongside colour on purpose. Active-vs-inactive is
+   a state, and a state is never allowed to ride on colour alone (C-18) - the
+   same redundancy the semantic roles in section 16 are specified with.
+
+   The declared background is `transparent` BY DECISION, not by omission: the
+   active ground is painted on the container behind this link, from
+   --color-nav-bg-primary-strong. That is the ground the 15.84:1 was measured
+   against (#111111 on #EBEBEB), not the transparent link box. */
+body:not(.layout_frontend) #bit-side-nav a[aria-current] {
+  background-color: transparent !important;
+  color: var(--kp-t1) !important;
+  font-weight: 600 !important;
+}
+
+/* Header edge. bit-header is a component selector, so it renders as a literal
+   tag wrapping the <header> element that carries the layout classes. */
+body:not(.layout_frontend) bit-header > header {
+  background-color: var(--kp-bg) !important;
+  color: var(--kp-t1) !important;
+  border-bottom: 1px solid var(--kp-border) !important;
+}
+
+/* Separator between the sun/moon control and the primary action.
+
+   Placed on the control's NEXT SIBLING rather than on the control itself, for
+   two independent reasons:
+
+     1. The docked control's hover paints border-color on all four sides, so a
+        border-based divider on the control would be swallowed by the hover
+        ring - present at rest, gone exactly when the user is looking at it.
+     2. `position: relative` + ::after was the other candidate and is refused:
+        verify_dock_gate asserts position === "static" as the PROOF that the
+        docking rule outranks the fixed login rule (Trap 314). A separator must
+        not cost us that assertion.
+
+   `+ *` rather than a named element: on the Trash screen "+ New" is absent and
+   the control docks before <product-switcher> instead, so naming the wrapper
+   would drop the separator on exactly one screen. With the row's own gap on
+   the left and this padding on the right, the line lands in the middle of the
+   gap instead of hugging either control. */
+body:not(.layout_frontend) #kp-theme-toggle[data-kp-docked] + * {
+  border-left: 1px solid var(--kp-border) !important;
+  padding-left: 8px !important;
+}
