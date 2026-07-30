@@ -254,6 +254,93 @@
       if (btn.hasAttribute(DOCKED)) btn.removeAttribute(DOCKED);
     }
     paintButton(btn);
+    markApiKeyFolders();
+  }
+
+  /* ==========================================================================
+     API-KEY FOLDER MARKING
+     --------------------------------------------------------------------------
+     Vaultwarden has no api-key item type and this fork cannot add one, so the
+     category is carried by a FOLDER - real, encrypted, searchable vault data.
+     This function only decides WHICH row is that folder; css/kobiicraft-pass.css
+     section 21 decides how it looks. Marking and painting stay separated so the
+     rule for "what counts" is readable in one place.
+
+     TWO CONDITIONS, BOTH REQUIRED:
+
+       1. STRUCTURAL - the row carries an i.bwi-folder. vault-filter-section
+          renders `<i class="bwi bwi-fw {{ f.node.icon }}">`, so a folder is
+          distinguishable from a collection, a type filter or the "add folder"
+          link (which carries bwi-plus) without reading any text.
+       2. EXACT LABEL - after NBSP normalisation and trimming, case-insensitive.
+
+     Condition 2 is exact ON PURPOSE. Substring matching on "api" would badge
+     "therAPIst", "RapidAPI" and "Wasabi"; the vault renders in ES and EN, so a
+     lexical rule is wrong in at least one language at all times. A badge that
+     asserts a category it cannot actually determine is worse than no badge -
+     it teaches the operator to stop trusting badges.
+
+     Un-marking is as important as marking: rename the folder and the attribute
+     is removed on the next observation, so the treatment cannot outlive its
+     cause. Attributes are only written when actually wrong, which is what keeps
+     the MutationObserver from re-triggering itself forever - same convergence
+     argument as the docked control above, and asserted in the gate rather than
+     assumed. */
+  var APIKEY_ATTR = "data-kp-apikeys";
+
+  /* Add a locale here to adopt the convention in that language. A language with
+     no row simply never matches, which is a visible no-op rather than a wrong
+     badge - the safe direction to fail in. */
+  var APIKEY_NAMES = ["api keys", "claves api"];
+
+  function normLabel(el) {
+    return (el.textContent || "").replace(/\u00a0/g, " ").trim().toLowerCase();
+  }
+
+  function markApiKeyFolders() {
+    var rows = document.querySelectorAll("li.filter-option");
+    for (var i = 0; i < rows.length; i++) {
+      var li = rows[i];
+      var btn = li.querySelector(":scope > .filter-buttons > .filter-button");
+      var isFolder = !!(btn && btn.querySelector("i.bwi-folder"));
+      var hit = isFolder && APIKEY_NAMES.indexOf(normLabel(btn)) > -1;
+
+      if (hit) {
+        if (!li.hasAttribute(APIKEY_ATTR)) li.setAttribute(APIKEY_ATTR, "1");
+      } else if (li.hasAttribute(APIKEY_ATTR)) {
+        li.removeAttribute(APIKEY_ATTR);
+      }
+    }
+  }
+
+  /* ==========================================================================
+     SSO CAPABILITY PROBE
+     --------------------------------------------------------------------------
+     The login page ships a "Use single sign-on" button unconditionally, but this
+     deployment has no OIDC authority configured: /api/config reports "sso": ""
+     and /identity/connect/oidc-signin returns 404. Clicking it does nothing.
+
+     Rather than hard-hiding it, we read the SAME public config document the app
+     itself reads and stamp data-kp-sso="on" when an SSO url is actually present.
+     Section 20 hides the button only while that attribute is absent, so the day
+     an authority is configured the button comes back on its own - no code change
+     and nothing for a future session to remember.
+
+     credentials:"omit" because this endpoint is public and this layer must never
+     be in the position of carrying a session. On any failure the attribute is
+     simply never set and the button stays hidden: showing a control we cannot
+     prove works is the one outcome worth avoiding. */
+  var SSO_ATTR = "data-kp-sso";
+
+  function probeSso() {
+    if (!window.fetch) return;
+    window.fetch("/api/config", { credentials: "omit" })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (cfg) {
+        var url = cfg && cfg.environment && cfg.environment.sso;
+        if (url) document.documentElement.setAttribute(SSO_ATTR, "on");
+      })
+      .catch(function () { /* stays hidden - see above */ });
   }
 
   /* Follow the OS while the user has not made an explicit choice. Once they
@@ -310,12 +397,29 @@
       if (window.requestAnimationFrame) window.requestAnimationFrame(run);
       else window.setTimeout(run, 200);
     };
+    /* characterData matters as much as childList here, and it was missing.
+       Angular renders a folder name as `&nbsp;{{ f.node.name }}`, so RENAMING a
+       folder adds and removes no element - it rewrites an existing text node's
+       data, which is a characterData mutation. Without this flag the observer
+       never fires on a rename, markApiKeyFolders() never re-runs, and a folder
+       renamed away from the convention keeps its "API" badge forever: a label
+       asserting a category that is no longer true.
+
+       Caught by V-PASS-APIKEY-UNMARKS, which renames ONLY the text node and
+       leaves the icon in place - so a failure there means the LABEL half of the
+       rule stopped being re-evaluated, not that the structural half broke.
+
+       Cost is bounded: schedule() is requestAnimationFrame-debounced, so a burst
+       of text updates collapses into one mount() per frame, and mount() only
+       writes when something is actually wrong. */
     new MutationObserver(schedule).observe(document.documentElement, {
       childList: true,
+      characterData: true,
       subtree: true
     });
   });
 
   guard("watchSystem", watchSystem);
   guard("watchStorage", watchStorage);
+  guard("ssoProbe", probeSso);
 })();

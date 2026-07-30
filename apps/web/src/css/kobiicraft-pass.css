@@ -831,3 +831,117 @@ body:not(.layout_frontend) #kp-theme-toggle[data-kp-docked] + * {
   border-left: 1px solid var(--kp-border) !important;
   padding-left: 8px !important;
 }
+
+/* ---- 20. Login controls this server cannot honour --------------------------
+   Both controls below were LIVE DEFECTS, measured on the production page:
+
+     "Use single sign-on"  -> click does nothing; /identity/connect/oidc-signin
+                              returns 404 and /api/config reports  "sso": ""
+     "Log in with passkey" -> navigates, then fails with a 404 and the message
+                              "Passkey authentication failed"
+
+   The vw-* class names are Vaultwarden's own OPERATOR HOOKS: they appear in
+   login.component.html and are styled NOWHERE in the shipped stylesheet or in
+   index.html (verified: zero matches). They exist precisely so a deployment can
+   decide which login paths it offers. Using them is the intended mechanism, not
+   a workaround.
+
+   THE TWO CASES ARE DIFFERENT AND ARE TREATED DIFFERENTLY.
+
+   SSO is a CONFIGURATION gap, so it is hidden CONDITIONALLY. js/kp-theme.js
+   reads the same public /api/config the app itself reads and stamps
+   data-kp-sso="on" when the server reports a non-empty SSO url. The rule below
+   only matches while that attribute is absent, so the day an OIDC authority is
+   configured the button returns BY ITSELF - no code change, nothing to
+   remember. Selecting on :not() rather than adding a reveal rule also means the
+   button keeps its own native display value instead of us guessing it.
+
+   Fail direction is deliberate: if the probe fails the attribute is never set
+   and the button stays hidden. Never show a control we cannot prove works.
+
+   Passkey is a CAPABILITY gap, so it is hidden UNCONDITIONALLY. Vaultwarden
+   1.36.0 has no passwordless login at all: grep finds no `assertion-options`
+   and no `passwordless` in the binary, while `two-factor/get-webauthn` IS
+   present - WebAuthn ships as second factor only. No configuration can turn
+   this on, so there is nothing to probe. Revisit on a Vaultwarden upgrade.
+
+   The "or" divider goes with the SSO button. With both alternatives gone it
+   would separate nothing, and a dangling "o" over a single button is a defect
+   we would have introduced ourselves.
+   ============================================================================ */
+body.layout_frontend .vw-passkey-login {
+  display: none !important;
+}
+
+html:not([data-kp-sso="on"]) body.layout_frontend .vw-sso-login,
+html:not([data-kp-sso="on"]) body.layout_frontend .vw-or-text {
+  display: none !important;
+}
+
+/* ---- 21. The API Keys folder ----------------------------------------------
+   Vaultwarden has NO api-key item type and this fork cannot add one:
+   CipherType is Object.freeze'd at Login/SecureNote/Card/Identity/SshKey,
+   guarded by isCipherType(), and normalised through @bitwarden/sdk-internal -
+   a Rust/WASM package. A sixth value needs the SDK and the Rust server.
+
+   So the category is carried by a FOLDER, which is real vault data: encrypted,
+   searchable, exportable, and something the vault genuinely filters by. The
+   secret itself lives in a Hidden custom field, environment and owner in Text
+   fields. Nothing here invents a taxonomy - it makes an existing one legible.
+
+   WHY THE MATCH IS EXACT AND FOLDER-SCOPED, NOT A SUBSTRING
+   js/kp-theme.js marks a row only when BOTH hold: the row carries an
+   i.bwi-folder (so it is a FOLDER, never a collection or a type filter), and
+   its label matches a convention name EXACTLY after trimming and NBSP
+   normalisation. Substring matching on "api" would badge "therAPIst",
+   "RapidAPI" and "Wasabi", in a vault that renders in two languages. A badge
+   that asserts a category it cannot actually determine teaches the operator to
+   stop trusting badges - worse than no badge at all.
+
+   The mark is an ATTRIBUTE set by JS and consumed here. JS decides WHAT is an
+   API-key folder; CSS decides how it LOOKS. Renaming the folder removes the
+   attribute on the next observation, so the treatment cannot outlive its cause.
+
+   Deliberately monochrome. Section 16 records that green asserts a MEASUREMENT
+   that passed; this badge asserts a CONVENTION the operator adopted, which is
+   not a measured state. Grey is the honest colour for that. The accent is the
+   neutral one the primary action already uses, never a semantic hue.
+
+   The badge ground is --kp-bg rather than --kp-bg-hover on purpose: the row
+   itself is painted --kp-bg-hover, so a badge sharing that value would vanish
+   into it. Contrast measured against the ground it actually sits on -
+   #111111 on #FFFFFF = 18.88:1 light, #EBEBEB on #0C0C0C = 16.41:1 dark.
+
+   "API" is used as the badge text because it is language-neutral - identical in
+   ES and EN. Contract clause C-2 forbids mixing languages on one screen, and a
+   translated badge would do exactly that on a screen the user set to the other
+   language.
+   ============================================================================ */
+body:not(.layout_frontend) li.filter-option[data-kp-apikeys] {
+  background-color: var(--kp-bg-hover) !important;
+  color: var(--kp-t1) !important;
+  border-left: 2px solid var(--kp-accent) !important;
+  border-radius: 4px !important;
+}
+
+/* Swap the folder glyph for the key glyph. \f130 is bwi-key, read from the
+   shipped icon font (.bwi-key:before{content:"\f130"}), not guessed - these are
+   private-use codepoints with no meaning outside this font. */
+body:not(.layout_frontend) li.filter-option[data-kp-apikeys] > .filter-buttons > .filter-button > i.bwi::before {
+  content: "\f130" !important;
+}
+
+body:not(.layout_frontend) li.filter-option[data-kp-apikeys] > .filter-buttons > .filter-button::after {
+  content: "API";
+  margin-left: 6px;
+  padding: 0 5px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  line-height: 16px;
+  border-radius: 3px;
+  vertical-align: middle;
+  background-color: var(--kp-bg);
+  color: var(--kp-accent);
+  border: 1px solid var(--kp-border);
+}
